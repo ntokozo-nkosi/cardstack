@@ -133,7 +133,7 @@ export default function StudyModePage() {
 
       <div className="flex-1 flex items-center justify-center px-8 pb-16">
         <div className="w-full max-w-2xl">
-          <Flashcard front={currentCard.front} back={currentCard.back} />
+          <Flashcard key={currentCard.id} front={currentCard.front} back={currentCard.back} />
         </div>
       </div>
 
