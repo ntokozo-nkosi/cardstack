@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
@@ -39,7 +39,7 @@ export default function StudyModePage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  const fetchDeck = async () => {
+  const fetchDeck = useCallback(async () => {
     try {
       const response = await fetch(`/api/decks/${id}`)
       if (!response.ok) {
@@ -57,11 +57,11 @@ export default function StudyModePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, router])
 
   useEffect(() => {
     fetchDeck()
-  }, [id])
+  }, [fetchDeck])
 
   const handlePrevious = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : shuffledCards.length - 1))

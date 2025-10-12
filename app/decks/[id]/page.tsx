@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Edit, Trash2, Play } from 'lucide-react'
@@ -35,7 +35,7 @@ export default function DeckDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
 
-  const fetchDeck = async () => {
+  const fetchDeck = useCallback(async () => {
     try {
       const response = await fetch(`/api/decks/${id}`)
       if (!response.ok) {
@@ -52,11 +52,11 @@ export default function DeckDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, router])
 
   useEffect(() => {
     fetchDeck()
-  }, [id])
+  }, [fetchDeck])
 
   const handleEdit = (card: Card) => {
     setSelectedCard(card)
