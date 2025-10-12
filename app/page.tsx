@@ -79,15 +79,15 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto p-4 sm:p-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-4xl font-bold mb-2">CardStack</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">CardStack</h1>
           <p className="text-muted-foreground">
             Create and study flashcard decks
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} size="lg">
+        <Button onClick={() => setCreateDialogOpen(true)} size="lg" className="w-full sm:w-auto">
           <Plus className="mr-2 h-5 w-5" />
           New Deck
         </Button>

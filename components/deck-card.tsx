@@ -34,23 +34,23 @@ export function DeckCard({ deck, onEdit, onDelete }: DeckCardProps) {
           {deck._count.cards} {deck._count.cards === 1 ? 'card' : 'cards'}
         </p>
       </CardContent>
-      <CardFooter className="flex gap-2">
-        <Button asChild variant="default" size="sm" className="flex-1">
+      <CardFooter className="flex flex-wrap gap-2">
+        <Button asChild variant="default" size="sm" className="flex-1 min-w-[80px]">
           <Link href={`/decks/${deck.id}`}>
             View
           </Link>
         </Button>
         {deck._count.cards > 0 && (
-          <Button asChild variant="secondary" size="sm">
+          <Button asChild variant="secondary" size="sm" className="flex-none">
             <Link href={`/decks/${deck.id}/study`}>
               <Play className="h-4 w-4" />
             </Link>
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={onEdit}>
+        <Button variant="outline" size="sm" onClick={onEdit} className="flex-none">
           <Edit className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={onDelete}>
+        <Button variant="outline" size="sm" onClick={onDelete} className="flex-none">
           <Trash2 className="h-4 w-4" />
         </Button>
       </CardFooter>

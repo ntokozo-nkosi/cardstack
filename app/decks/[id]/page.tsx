@@ -97,7 +97,7 @@ export default function DeckDetailPage() {
   if (!deck) return null
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-4 sm:p-8">
       <div className="mb-8">
         <Button variant="ghost" asChild className="mb-4">
           <Link href="/">
@@ -106,9 +106,9 @@ export default function DeckDetailPage() {
           </Link>
         </Button>
 
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">{deck.name}</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
+          <div className="flex-1">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">{deck.name}</h1>
             {deck.description && (
               <p className="text-muted-foreground">{deck.description}</p>
             )}
@@ -116,16 +116,16 @@ export default function DeckDetailPage() {
               {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {deck.cards.length > 0 && (
-              <Button asChild>
+              <Button asChild className="w-full sm:w-auto">
                 <Link href={`/decks/${id}/study`}>
                   <Play className="mr-2 h-4 w-4" />
                   Study
                 </Link>
               </Button>
             )}
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Add Card
             </Button>
@@ -147,9 +147,9 @@ export default function DeckDetailPage() {
         <div className="space-y-4">
           {deck.cards.map((card) => (
             <Card key={card.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1 grid grid-cols-2 gap-8">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 w-full">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-2">
                         Front
@@ -163,11 +163,12 @@ export default function DeckDetailPage() {
                       <p className="whitespace-pre-wrap">{card.back}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(card)}
+                      className="flex-1 sm:flex-none"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -175,6 +176,7 @@ export default function DeckDetailPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(card)}
+                      className="flex-1 sm:flex-none"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

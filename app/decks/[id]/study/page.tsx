@@ -108,53 +108,55 @@ export default function StudyModePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="container mx-auto p-8">
-        <div className="flex justify-between items-center mb-8">
-          <Button variant="ghost" asChild>
+      <div className="container mx-auto p-4 sm:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <Button variant="ghost" asChild className="w-full sm:w-auto">
             <Link href={`/decks/${id}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Deck
             </Link>
           </Button>
 
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">{deck.name}</h1>
+          <div className="text-center flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold">{deck.name}</h1>
             <p className="text-sm text-muted-foreground">
               Card {currentIndex + 1} of {shuffledCards.length}
             </p>
           </div>
 
-          <Button variant="outline" onClick={handleShuffle}>
+          <Button variant="outline" onClick={handleShuffle} className="w-full sm:w-auto">
             <RotateCcw className="mr-2 h-4 w-4" />
             Shuffle
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-8 pb-16">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 pb-8 sm:pb-16">
         <div className="w-full max-w-2xl">
           <Flashcard key={currentCard.id} front={currentCard.front} back={currentCard.back} />
         </div>
       </div>
 
-      <div className="container mx-auto p-8">
-        <div className="flex justify-center gap-4">
+      <div className="container mx-auto p-4 sm:p-8">
+        <div className="flex justify-center gap-2 sm:gap-4">
           <Button
             variant="outline"
             size="lg"
             onClick={handlePrevious}
-            className="w-32"
+            className="flex-1 sm:flex-none sm:w-32"
           >
             <ChevronLeft className="mr-2 h-5 w-5" />
-            Previous
+            <span className="hidden sm:inline">Previous</span>
+            <span className="sm:hidden">Prev</span>
           </Button>
           <Button
             variant="default"
             size="lg"
             onClick={handleNext}
-            className="w-32"
+            className="flex-1 sm:flex-none sm:w-32"
           >
-            Next
+            <span className="sm:hidden">Next</span>
+            <span className="hidden sm:inline">Next</span>
             <ChevronRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
