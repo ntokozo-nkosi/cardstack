@@ -156,12 +156,14 @@ export default function DeckDetailPage() {
                       </p>
                       <p className="whitespace-pre-wrap">{card.front}</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
-                        Back
-                      </p>
-                      <p className="whitespace-pre-wrap">{card.back}</p>
-                    </div>
+                    {editDialogOpen && selectedCard?.id === card.id && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">
+                          Back
+                        </p>
+                        <p className="whitespace-pre-wrap">{card.back}</p>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
                     <Button
