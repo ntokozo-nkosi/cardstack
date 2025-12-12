@@ -14,8 +14,8 @@ A clean, simple flashcard app for creating and studying decks.
 
 - **Next.js 15** - React framework with App Router
 - **TypeScript** - Type safety
-- **Prisma** - Database ORM
 - **PostgreSQL** - Database (Neon)
+- **Goose** - Database migrations
 - **Tailwind CSS** - Styling
 - **shadcn/ui** - UI components
 
@@ -41,9 +41,9 @@ A clean, simple flashcard app for creating and studying decks.
    DATABASE_URL="your_neon_connection_string"
    ```
 
-4. **Generate Prisma Client**
+4. **Run database migrations**
    ```bash
-   npm run db:generate
+   make migrate
    ```
 
 5. **Run the development server**
@@ -55,19 +55,12 @@ A clean, simple flashcard app for creating and studying decks.
 
 ## Database Commands
 
+Using the Makefile with Goose:
 ```bash
-npm run db:generate      # Generate Prisma Client
-npm run db:push          # Push schema changes
-npm run db:migrate:dev   # Create and apply migrations
-npm run db:studio        # Open Prisma Studio GUI
-```
-
-Or use the Makefile:
-```bash
-make db-generate
-make db-push
-make db-migrate-dev
-make db-studio
+make migration    # Create a new migration file
+make migrate      # Apply all pending migrations
+make rollback     # Roll back the last migration
+make reset        # Reset all migrations
 ```
 
 ## Project Structure
@@ -78,8 +71,10 @@ app/
 ├── decks/[id]/       # Deck detail and study pages
 └── page.tsx          # Home page (deck grid)
 components/           # React components
-prisma/
-└── schema.prisma     # Database schema
+database/
+└── migrations/       # SQL migrations managed by Goose
+lib/
+└── database.ts       # PostgreSQL connection pool
 ```
 
 ## License

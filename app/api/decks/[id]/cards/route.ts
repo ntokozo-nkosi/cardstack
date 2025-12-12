@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { query } from '@/lib/database'
 
 export async function POST(
   request: Request,
@@ -24,15 +24,14 @@ export async function POST(
       )
     }
 
-    const card = await prisma.card.create({
-      data: {
-        deckId: id,
-        front: front.trim(),
-        back: back.trim()
-      }
-    })
+    const result = await query(
+      `INSERT INTO cards (deck_id, front, back) 
+       VALUES ($1, $2, $3) 
+       RETURNING id, deck_id as "deckId", front, back, created_at as "createdAt"`,
+      [id, front.trim(), back.trim()]
+    )
 
-    return NextResponse.json(card, { status: 201 })
+    return NextResponse.json(result.rows[0], { status: 201 })
   } catch (error) {
     console.error('Failed to create card:', error)
     return NextResponse.json(

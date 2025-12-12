@@ -1,22 +1,19 @@
-.PHONY: db-generate db-push db-migrate-dev db-migrate-deploy db-studio db-seed db-reset
+.PHONY: dev migration migrate rollback reset
 
-db-generate:
-	npx prisma generate
+# Development
+dev:
+	doppler run -- npm run dev
 
-db-push:
-	npx prisma db push
+# Database migrations (uses DATABASE_URL_UNPOOLED for direct connection to avoid pooler issues)
+migration:
+	@read -p "Enter migration name: " name; \
+		doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations create '$$name' sql'
 
-db-migrate-dev:
-	npx prisma migrate dev
+migrate:
+	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations up'
 
-db-migrate-deploy:
-	npx prisma migrate deploy
+rollback:
+	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations down'
 
-db-studio:
-	npx prisma studio
-
-db-seed:
-	npx prisma db seed
-
-db-reset:
-	npx prisma migrate reset
+reset:
+	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations reset'

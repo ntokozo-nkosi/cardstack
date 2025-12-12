@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { query } from '@/lib/database'
 
 export async function PUT(
   request: Request,
@@ -24,15 +24,21 @@ export async function PUT(
       )
     }
 
-    const card = await prisma.card.update({
-      where: { id },
-      data: {
-        front: front.trim(),
-        back: back.trim()
-      }
-    })
+    const result = await query(
+      `UPDATE cards SET front = $1, back = $2 
+       WHERE id = $3 
+       RETURNING id, deck_id as "deckId", front, back, created_at as "createdAt"`,
+      [front.trim(), back.trim(), id]
+    )
 
-    return NextResponse.json(card)
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Card not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(result.rows[0])
   } catch (error) {
     console.error('Failed to update card:', error)
     return NextResponse.json(
@@ -49,9 +55,7 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    await prisma.card.delete({
-      where: { id }
-    })
+    await query('DELETE FROM cards WHERE id = $1', [id])
 
     return NextResponse.json({ success: true })
   } catch (error) {

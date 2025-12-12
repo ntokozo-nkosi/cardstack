@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { query } from '@/lib/database'
 
 export async function GET() {
   try {
-    const decks = await prisma.deck.findMany({
-      include: {
-        _count: {
-          select: { cards: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+    const result = await query(`
+      SELECT 
+        d.id,
+        d.name,
+        d.description,
+        d.created_at as "createdAt",
+        COUNT(c.id)::int as "_count"
+      FROM decks d
+      LEFT JOIN cards c ON c.deck_id = d.id
+      GROUP BY d.id
+      ORDER BY d.created_at DESC
+    `)
+
+    const decks = result.rows.map((row: { id: string; name: string; description: string | null; createdAt: Date; _count: number }) => ({
+      ...row,
+      _count: { cards: row._count }
+    }))
 
     return NextResponse.json(decks)
   } catch (error) {
@@ -34,14 +43,14 @@ export async function POST(request: Request) {
       )
     }
 
-    const deck = await prisma.deck.create({
-      data: {
-        name: name.trim(),
-        description: description?.trim() || null
-      }
-    })
+    const result = await query(
+      `INSERT INTO decks (name, description) 
+       VALUES ($1, $2) 
+       RETURNING id, name, description, created_at as "createdAt"`,
+      [name.trim(), description?.trim() || null]
+    )
 
-    return NextResponse.json(deck, { status: 201 })
+    return NextResponse.json(result.rows[0], { status: 201 })
   } catch (error) {
     console.error('Failed to create deck:', error)
     return NextResponse.json(
