@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Trash2 } from 'lucide-react'
+import { Loader2, Save, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface EditCardDialogProps {
   card: {
@@ -50,10 +51,12 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
         throw new Error('Failed to update card')
       }
 
+      toast.success('Card updated')
       onOpenChange(false)
       onSuccess()
     } catch (error) {
       console.error('Error updating card:', error)
+      toast.error('Failed to update card')
     } finally {
       setLoading(false)
     }
@@ -61,18 +64,18 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[600px] gap-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Edit Card</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl font-bold">Edit Card</DialogTitle>
+            <DialogDescription className="text-base">
               Update the front and back of this flashcard.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div className="space-y-6 py-2">
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <Label htmlFor="edit-front">Front</Label>
+                <Label htmlFor="edit-front" className="text-base font-semibold">Front</Label>
                 <span className={`text-xs ${front.length > MAX_CHAR_LIMIT ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                   {front.length}/{MAX_CHAR_LIMIT}
                 </span>
@@ -82,15 +85,15 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
                 value={front}
                 onChange={(e) => setFront(e.target.value)}
                 placeholder="Enter the question or prompt"
-                rows={3}
+                rows={4}
                 maxLength={MAX_CHAR_LIMIT}
                 required
-                className={front.length > MAX_CHAR_LIMIT ? 'border-destructive' : ''}
+                className={`resize-y min-h-[120px] text-base p-4 rounded-xl border-2 focus-visible:ring-0 focus-visible:border-primary transition-colors ${front.length > MAX_CHAR_LIMIT ? 'border-destructive' : 'border-muted'}`}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <Label htmlFor="edit-back">Back</Label>
+                <Label htmlFor="edit-back" className="text-base font-semibold">Back</Label>
                 <span className={`text-xs ${back.length > MAX_CHAR_LIMIT ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                   {back.length}/{MAX_CHAR_LIMIT}
                 </span>
@@ -100,10 +103,10 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
                 value={back}
                 onChange={(e) => setBack(e.target.value)}
                 placeholder="Enter the answer"
-                rows={3}
+                rows={4}
                 maxLength={MAX_CHAR_LIMIT}
                 required
-                className={back.length > MAX_CHAR_LIMIT ? 'border-destructive' : ''}
+                className={`resize-y min-h-[120px] text-base p-4 rounded-xl border-2 focus-visible:ring-0 focus-visible:border-primary transition-colors ${back.length > MAX_CHAR_LIMIT ? 'border-destructive' : 'border-muted'}`}
               />
             </div>
           </div>
@@ -113,7 +116,7 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/10 justify-start sm:justify-center px-0 sm:px-4"
                   onClick={() => {
                     onOpenChange(false)
                     onDelete(card)
@@ -138,9 +141,10 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
               <Button
                 type="submit"
                 disabled={loading || !front.trim() || !back.trim() || front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none shadow-md"
               >
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Changes
               </Button>
             </div>
           </DialogFooter>
