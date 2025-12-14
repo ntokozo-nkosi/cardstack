@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, RotateCcw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Flashcard } from '@/components/flashcard'
+import { AnimatePresence, motion } from 'framer-motion'
 
 interface Card {
   id: string
@@ -29,6 +30,27 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled
 }
 
+const variants = {
+  enter: (direction: number) => ({
+    x: 0,
+    opacity: 0,
+    scale: 0.95,
+  }),
+  center: {
+    zIndex: 1,
+    x: 0,
+    opacity: 1,
+    scale: 1,
+  },
+  exit: (direction: number) => ({
+    zIndex: 0,
+    x: direction === 1 ? 500 : -500,
+    opacity: 0,
+    rotate: direction === 1 ? 20 : -20,
+    transition: { duration: 0.3 }
+  })
+}
+
 export default function StudyModePage() {
   const params = useParams()
   const router = useRouter()
@@ -38,6 +60,7 @@ export default function StudyModePage() {
   const [queue, setQueue] = useState<Card[]>([])
   const [isFlipped, setIsFlipped] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [exitDirection, setExitDirection] = useState(0) // 0=none, 1=right(correct), -1=left(wrong)
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -68,12 +91,14 @@ export default function StudyModePage() {
   }
 
   const handleCorrect = () => {
+    setExitDirection(1)
     // Remove current card from queue
     setQueue((prev) => prev.slice(1))
     setIsFlipped(false)
   }
 
   const handleIncorrect = () => {
+    setExitDirection(-1)
     // Move current card to end of queue
     setQueue((prev) => {
       const current = prev[0]
@@ -160,17 +185,32 @@ export default function StudyModePage() {
         </p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 min-h-0">
-        <div className="w-full max-w-2xl relative">
-          {currentCard && (
-            <Flashcard
-              key={currentCard.id} // Important for resetting state if we weren't controlling it, but now we are. Still good for animation keying.
-              front={currentCard.front}
-              back={currentCard.back}
-              isFlipped={isFlipped}
-              onFlip={handleFlip}
-            />
-          )}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 min-h-0 relative">
+        <div className="w-full max-w-2xl relative perspective-1000">
+          <AnimatePresence mode="wait" custom={exitDirection}>
+            {currentCard && (
+              <motion.div
+                key={currentCard.id}
+                custom={exitDirection}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 300, damping: 30 },
+                  opacity: { duration: 0.2 }
+                }}
+                className="w-full"
+              >
+                <Flashcard
+                  front={currentCard.front}
+                  back={currentCard.back}
+                  isFlipped={isFlipped}
+                  onFlip={handleFlip}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
