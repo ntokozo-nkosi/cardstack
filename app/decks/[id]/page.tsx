@@ -338,18 +338,32 @@ export default function DeckDetailPage() {
                 <div className="text-xs text-muted-foreground italic truncate max-w-[70%] opacity-0 transition-opacity group-hover:opacity-100">
                   Click to edit details
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleEdit(card)
-                  }}
-                  aria-label="Edit card"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(card)
+                    }}
+                    aria-label="Delete card"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleEdit(card)
+                    }}
+                    aria-label="Edit card"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
@@ -368,7 +382,6 @@ export default function DeckDetailPage() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSuccess={fetchDeck}
-        onDelete={handleDelete}
       />
 
       <AddToCollectionDialog

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Loader2, Save, Trash2 } from 'lucide-react'
+import { Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface EditCardDialogProps {
@@ -17,12 +17,11 @@ interface EditCardDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
-  onDelete?: (card: { id: string; front: string; back: string }) => void
 }
 
 const MAX_CHAR_LIMIT = 200
 
-export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }: EditCardDialogProps) {
+export function EditCardDialog({ card, open, onOpenChange, onSuccess }: EditCardDialogProps) {
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
   const [loading, setLoading] = useState(false)
@@ -110,42 +109,24 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
               />
             </div>
           </div>
-          <DialogFooter className="flex flex-row gap-2 justify-end sm:justify-between items-center mt-4">
-            {onDelete && card && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                onClick={() => {
-                  onOpenChange(false)
-                  onDelete(card)
-                }}
-                disabled={loading}
-                title="Delete Card"
-              >
-                <Trash2 className="h-5 w-5" />
-              </Button>
-            )}
-            <div className="flex gap-2 flex-1 sm:flex-none sm:ml-auto w-full sm:w-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-                className="flex-1 sm:flex-none"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading || !front.trim() || !back.trim() || front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT}
-                className="flex-1 sm:flex-none shadow-md"
-              >
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save
-              </Button>
-            </div>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+              className="flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading || !front.trim() || !back.trim() || front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT}
+              className="flex-1 sm:flex-none shadow-md"
+            >
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
