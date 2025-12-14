@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit, Trash2, Play, Pencil } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Trash2, Play, Pencil, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -39,6 +39,7 @@ export default function DeckDetailPage() {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editedTitle, setEditedTitle] = useState('')
+  const [isSavingTitle, setIsSavingTitle] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   const fetchDeck = useCallback(async () => {
@@ -66,8 +67,11 @@ export default function DeckDetailPage() {
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
-      titleInputRef.current.focus()
-      titleInputRef.current.select()
+      const input = titleInputRef.current
+      input.focus()
+      // Place cursor at the end instead of selecting all
+      const length = input.value.length
+      input.setSelectionRange(length, length)
     }
   }, [isEditingTitle])
 
@@ -95,13 +99,14 @@ export default function DeckDetailPage() {
       return
     }
 
+    setIsSavingTitle(true)
     try {
       const response = await fetch(`/api/decks/${id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name: editedTitle.trim() })
+        body: JSON.stringify({ name: editedTitle.trim(), description: deck?.description })
       })
 
       if (!response.ok) throw new Error('Failed to update deck name')
@@ -113,6 +118,8 @@ export default function DeckDetailPage() {
       console.error('Error updating deck name:', error)
       toast.error('Failed to update deck name')
       setEditedTitle(deck?.name || '')
+    } finally {
+      setIsSavingTitle(false)
     }
   }
 
@@ -195,15 +202,23 @@ export default function DeckDetailPage() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             {isEditingTitle ? (
-              <input
-                ref={titleInputRef}
-                type="text"
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                onBlur={saveTitle}
-                onKeyDown={handleTitleKeyDown}
-                className="w-full rounded border border-primary bg-background px-3 py-2 text-2xl font-semibold tracking-tight outline-none focus:ring-2 focus:ring-primary/20 sm:text-3xl"
-              />
+              <div className="relative mb-1">
+                <input
+                  ref={titleInputRef}
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onBlur={saveTitle}
+                  onKeyDown={handleTitleKeyDown}
+                  disabled={isSavingTitle}
+                  className="w-full border-0 border-b-2 border-primary bg-transparent px-0 py-0 text-2xl font-semibold tracking-tight outline-none transition-colors focus:border-primary disabled:opacity-50 sm:text-3xl"
+                />
+                {isSavingTitle && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="group mb-1 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
                 <h1 className="truncate text-2xl font-semibold tracking-tight transition-colors group-hover:text-primary sm:text-3xl">
