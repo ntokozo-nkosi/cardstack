@@ -191,9 +191,9 @@ export default function DeckDetailPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
-      <Link 
-        href="/" 
-        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      <Link
+        href="/"
+        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 -ml-2 pl-2 pr-3 rounded-md hover:bg-muted/50"
       >
         <ArrowLeft size={16} />
         Back to Decks
@@ -212,7 +212,7 @@ export default function DeckDetailPage() {
                   onBlur={saveTitle}
                   onKeyDown={handleTitleKeyDown}
                   disabled={isSavingTitle}
-                  className="w-full border-0 border-b-2 border-primary bg-transparent px-0 py-0 text-2xl font-semibold tracking-tight outline-none transition-colors focus:border-primary disabled:opacity-50 sm:text-3xl"
+                  className="w-full border-0 border-b-2 border-primary bg-transparent px-0 py-0 text-3xl font-semibold tracking-tight outline-none transition-colors focus:border-primary disabled:opacity-50"
                 />
                 {isSavingTitle && (
                   <div className="absolute right-0 top-1/2 -translate-y-1/2">
@@ -222,13 +222,13 @@ export default function DeckDetailPage() {
               </div>
             ) : (
               <div className="group mb-1 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
-                <h1 className="truncate text-2xl font-semibold tracking-tight transition-colors group-hover:text-primary sm:text-3xl">
+                <h1 className="truncate text-3xl font-semibold tracking-tight transition-colors group-hover:text-primary">
                   {deck.name}
                 </h1>
                 <Pencil className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary sm:h-5 sm:w-5" />
               </div>
             )}
-            
+
             {deck.description && (
               <p className="mt-2 text-sm text-muted-foreground">{deck.description}</p>
             )}
@@ -240,7 +240,7 @@ export default function DeckDetailPage() {
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
             <button
               onClick={() => setDeleteDeckDialogOpen(true)}
-              className="inline-flex items-center gap-2 self-start px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors sm:self-auto"
+              className="inline-flex items-center justify-center gap-2 self-start px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors sm:self-auto"
               aria-label="Delete deck"
             >
               <Trash2 size={16} />
@@ -249,14 +249,14 @@ export default function DeckDetailPage() {
 
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               {deck.cards.length > 0 && (
-                <Button asChild size="sm" className="w-full sm:w-auto">
+                <Button asChild className="w-full sm:w-auto h-11 sm:h-9">
                   <Link href={`/decks/${id}/study`}>
                     <Play className="mr-2 h-4 w-4" />
                     Study
                   </Link>
                 </Button>
               )}
-              <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="w-full sm:w-auto">
+              <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto h-11 sm:h-9">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Card
               </Button>
@@ -276,45 +276,25 @@ export default function DeckDetailPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5 sm:space-y-3">
           {deck.cards.map((card) => (
-            <Card key={card.id} className="py-0">
+            <Card key={card.id} className="py-0 hover:bg-muted/50 active:bg-muted transition-colors cursor-pointer" onClick={() => handleEdit(card)}>
               <CardContent className="p-4 sm:p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="grid w-full min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                        Front
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{card.front}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                        Back
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{card.back}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 self-end sm:self-start">
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => handleEdit(card)}
-                      aria-label="Edit card"
-                      title="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => handleDelete(card)}
-                      aria-label="Delete card"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex items-start justify-between gap-3 sm:gap-4">
+                  <p className="whitespace-pre-wrap text-sm sm:text-sm leading-relaxed flex-1 min-w-0 py-1">{card.front}</p>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 sm:h-8 sm:w-8 flex-shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleEdit(card)
+                    }}
+                    aria-label="Edit card"
+                    title="Edit"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -334,6 +314,7 @@ export default function DeckDetailPage() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSuccess={fetchDeck}
+        onDelete={handleDelete}
       />
 
       <DeleteConfirmDialog

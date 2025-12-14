@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Trash2 } from 'lucide-react'
 
 interface EditCardDialogProps {
   card: {
@@ -15,9 +16,10 @@ interface EditCardDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  onDelete?: (card: { id: string; front: string; back: string }) => void
 }
 
-export function EditCardDialog({ card, open, onOpenChange, onSuccess }: EditCardDialogProps) {
+export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }: EditCardDialogProps) {
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
   const [loading, setLoading] = useState(false)
@@ -89,13 +91,42 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess }: EditCard
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading || !front.trim() || !back.trim()}>
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
+          <DialogFooter className="flex-col gap-3 sm:flex-row sm:gap-2">
+            {onDelete && card && (
+              <div className="w-full sm:flex-1 sm:justify-start order-last sm:order-first">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    onOpenChange(false)
+                    onDelete(card)
+                  }}
+                  disabled={loading}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            )}
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+                className="flex-1 sm:flex-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading || !front.trim() || !back.trim()}
+                className="flex-1 sm:flex-none"
+              >
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
