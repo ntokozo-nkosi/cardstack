@@ -6,13 +6,11 @@ import Link from 'next/link'
 import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent } from '@/components/ui/card'
 import { CreateCardDialog } from '@/components/create-card-dialog'
 import { EditCardDialog } from '@/components/edit-card-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { AddToCollectionDialog } from '@/components/add-to-collection-dialog'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,

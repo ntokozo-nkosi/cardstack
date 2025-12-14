@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Flashcard } from '@/components/flashcard'
 import { AnimatePresence, motion } from 'framer-motion'
-import { cn } from '@/lib/utils'
 
 interface Card {
   id: string
@@ -90,6 +89,33 @@ export default function StudyModePage() {
     fetchDeck()
   }, [fetchDeck])
 
+  const handleFlip = useCallback(() => {
+    setIsFlipped(!isFlipped)
+  }, [isFlipped])
+
+  const handleCorrect = useCallback(() => {
+    setDirection(1)
+    setTimeout(() => {
+      setQueue((prev) => prev.slice(1))
+      setCompletedCount(prev => prev + 1)
+      setIsFlipped(false)
+      setDirection(0)
+    }, 200)
+  }, [])
+
+  const handleIncorrect = useCallback(() => {
+    setDirection(-1)
+    setTimeout(() => {
+      setQueue((prev) => {
+        const current = prev[0]
+        if (!current) return prev
+        return [...prev.slice(1), current]
+      })
+      setIsFlipped(false)
+      setDirection(0)
+    }, 200)
+  }, [])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -109,34 +135,7 @@ export default function StudyModePage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [queue.length, isFlipped])
-
-  const handleFlip = () => {
-    setIsFlipped(!isFlipped)
-  }
-
-  const handleCorrect = () => {
-    setDirection(1)
-    setTimeout(() => {
-      setQueue((prev) => prev.slice(1))
-      setCompletedCount(prev => prev + 1)
-      setIsFlipped(false)
-      setDirection(0)
-    }, 200) // Slight delay to allow animation state update if needed, though with AnimatePresence it handles exit
-  }
-
-  const handleIncorrect = () => {
-    setDirection(-1)
-    setTimeout(() => {
-      setQueue((prev) => {
-        const current = prev[0]
-        if (!current) return prev
-        return [...prev.slice(1), current]
-      })
-      setIsFlipped(false)
-      setDirection(0)
-    }, 200)
-  }
+  }, [queue.length, isFlipped, handleFlip, handleCorrect, handleIncorrect])
 
   // Calculate progress
   const totalCards = deck?.cards.length || 0
@@ -195,7 +194,7 @@ export default function StudyModePage() {
           <div className="space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Session Complete!</h2>
             <p className="text-muted-foreground">
-              You've reviewed all {deck.cards.length} cards in this deck.
+              You&apos;ve reviewed all {deck.cards.length} cards in this deck.
             </p>
           </div>
 
