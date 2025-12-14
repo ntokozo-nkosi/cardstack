@@ -8,13 +8,31 @@ interface FlashcardProps {
   back: string
 }
 
-export function Flashcard({ front, back }: FlashcardProps) {
-  const [isFlipped, setIsFlipped] = useState(false)
+export function Flashcard({
+  front,
+  back,
+  isFlipped: controlledIsFlipped,
+  onFlip
+}: FlashcardProps & {
+  isFlipped?: boolean
+  onFlip?: () => void
+}) {
+  const [internalIsFlipped, setInternalIsFlipped] = useState(false)
+
+  const isFlipped = controlledIsFlipped ?? internalIsFlipped
+
+  const handleClick = () => {
+    if (onFlip) {
+      onFlip()
+    } else {
+      setInternalIsFlipped(!internalIsFlipped)
+    }
+  }
 
   return (
     <Card
       className="w-full h-64 sm:h-80 md:h-96 cursor-pointer select-none transition-all hover:shadow-xl"
-      onClick={() => setIsFlipped(!isFlipped)}
+      onClick={handleClick}
     >
       <div className="flex items-center justify-center h-full p-4 sm:p-6 md:p-8">
         <div className="text-center">

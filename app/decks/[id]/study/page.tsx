@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
+import { ArrowLeft, RotateCcw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Flashcard } from '@/components/flashcard'
 
@@ -24,7 +24,7 @@ function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array]
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
   return shuffled
 }
@@ -35,8 +35,8 @@ export default function StudyModePage() {
   const id = params.id as string
 
   const [deck, setDeck] = useState<Deck | null>(null)
-  const [shuffledCards, setShuffledCards] = useState<Card[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [queue, setQueue] = useState<Card[]>([])
+  const [isFlipped, setIsFlipped] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const fetchDeck = useCallback(async () => {
@@ -51,7 +51,7 @@ export default function StudyModePage() {
       }
       const data = await response.json()
       setDeck(data)
-      setShuffledCards(shuffleArray(data.cards))
+      setQueue(shuffleArray(data.cards))
     } catch (error) {
       console.error('Error fetching deck:', error)
     } finally {
@@ -63,20 +63,27 @@ export default function StudyModePage() {
     fetchDeck()
   }, [fetchDeck])
 
-  const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : shuffledCards.length - 1))
+  const handleFlip = () => {
+    setIsFlipped(!isFlipped)
   }
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev < shuffledCards.length - 1 ? prev + 1 : 0))
+  const handleCorrect = () => {
+    // Remove current card from queue
+    setQueue((prev) => prev.slice(1))
+    setIsFlipped(false)
   }
 
-  const handleShuffle = () => {
-    if (deck) {
-      setShuffledCards(shuffleArray(deck.cards))
-      setCurrentIndex(0)
-    }
+  const handleIncorrect = () => {
+    // Move current card to end of queue
+    setQueue((prev) => {
+      const current = prev[0]
+      if (!current) return prev
+      return [...prev.slice(1), current]
+    })
+    setIsFlipped(false)
   }
+
+  // Reload/Restart handler if needed, or just navigation
 
   if (loading) {
     return (
@@ -86,79 +93,104 @@ export default function StudyModePage() {
     )
   }
 
-  if (!deck || shuffledCards.length === 0) {
+  if (!deck || (queue.length === 0 && loading)) {
+    // simplified check, if queue is empty AND not loading, it means we finished? 
+    // or if deck was empty to begin with.
+    // If deck has 0 cards initially:
+    if (deck && deck.cards.length === 0) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-xl text-muted-foreground mb-4">
+              This deck has no cards to study.
+            </p>
+            <Button asChild>
+              <Link href={`/decks/${id}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Deck
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )
+    }
+  }
+
+  // Completion state
+  if (queue.length === 0 && deck && deck.cards.length > 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-muted-foreground mb-4">
-            This deck has no cards to study.
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-4">All Cached Up!</h2>
+          <p className="text-muted-foreground mb-8">
+            You've gone through all the cards in this session.
           </p>
-          <Button asChild>
-            <Link href={`/decks/${id}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Deck
-            </Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild variant="outline">
+              <Link href={`/decks/${id}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Deck
+              </Link>
+            </Button>
+            <Button onClick={() => setQueue(shuffleArray(deck.cards))}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Start Over
+            </Button>
+          </div>
         </div>
       </div>
     )
   }
 
-  const currentCard = shuffledCards[currentIndex]
+  const currentCard = queue[0]
 
   return (
     <div className="h-[calc(100dvh-56px)] md:h-dvh flex flex-col overflow-hidden">
-      <div className="container mx-auto px-4 pt-4 pb-2 sm:px-8 sm:pt-10 sm:pb-4 shrink-0">
+      <div className="flex items-center justify-between p-4 sm:p-6 shrink-0">
         <Link
           href={`/decks/${id}`}
-          className="mb-4 sm:mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 -ml-2 pl-2 pr-3 rounded-md hover:bg-muted/50"
+          className="text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2 rounded-full hover:bg-muted/50"
+          aria-label="Exit"
         >
-          <ArrowLeft size={16} />
-          Back to Deck
+          <X className="h-6 w-6" />
         </Link>
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-8">
-          <div className="text-center flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold">{deck.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              Card {currentIndex + 1} of {shuffledCards.length}
-            </p>
-          </div>
-
-          <Button variant="outline" onClick={handleShuffle} className="w-full sm:w-auto">
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Shuffle
-          </Button>
-        </div>
+        <p className="text-sm font-medium text-muted-foreground">
+          {queue.length} remaining
+        </p>
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 min-h-0">
-        <div className="w-full max-w-2xl">
-          <Flashcard key={currentCard.id} front={currentCard.front} back={currentCard.back} />
+        <div className="w-full max-w-2xl relative">
+          {currentCard && (
+            <Flashcard
+              key={currentCard.id} // Important for resetting state if we weren't controlling it, but now we are. Still good for animation keying.
+              front={currentCard.front}
+              back={currentCard.back}
+              isFlipped={isFlipped}
+              onFlip={handleFlip}
+            />
+          )}
         </div>
       </div>
 
-      <div className="container mx-auto px-4 pt-2 pb-3 sm:p-8 shrink-0">
-        <div className="flex justify-center gap-2 sm:gap-4">
+      <div className="container mx-auto px-4 pt-2 pb-8 sm:p-8 shrink-0 min-h-[100px]">
+        <div className="flex justify-center gap-4 transition-opacity duration-200" style={{ opacity: isFlipped ? 1 : 0, pointerEvents: isFlipped ? 'auto' : 'none' }}>
           <Button
-            variant="outline"
+            variant="destructive"
             size="lg"
-            onClick={handlePrevious}
-            className="flex-1 sm:flex-none sm:w-32"
+            onClick={handleIncorrect}
+            className="flex-1 sm:flex-none sm:w-40"
           >
-            <ChevronLeft className="mr-2 h-5 w-5" />
-            <span className="hidden sm:inline">Previous</span>
-            <span className="sm:hidden">Prev</span>
+            I got it wrong
           </Button>
           <Button
-            variant="default"
+            variant="default" // Green-ish usually, default is primary. Maybe I should style it green?
             size="lg"
-            onClick={handleNext}
-            className="flex-1 sm:flex-none sm:w-32"
+            onClick={handleCorrect}
+            className="flex-1 sm:flex-none sm:w-40 bg-green-600 hover:bg-green-700 text-white"
           >
-            <span className="sm:hidden">Next</span>
-            <span className="hidden sm:inline">Next</span>
-            <ChevronRight className="ml-2 h-5 w-5" />
+            I got it right
           </Button>
         </div>
       </div>
