@@ -31,7 +31,7 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 const variants = {
-  enter: (direction: number) => ({
+  enter: () => ({
     x: 0,
     opacity: 0,
     scale: 0.95,
@@ -148,7 +148,7 @@ export default function StudyModePage() {
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-bold mb-4">All Cached Up!</h2>
           <p className="text-muted-foreground mb-8">
-            You've gone through all the cards in this session.
+            You&apos;ve gone through all the cards in this session.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild variant="outline">

@@ -12,7 +12,7 @@ const pool = new Pool({
  */
 export async function query(
   text: string,
-  values?: any[]
+  values?: unknown[]
 ): Promise<QueryResult> {
   return pool.query(text, values);
 }
