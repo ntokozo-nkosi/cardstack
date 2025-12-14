@@ -110,25 +110,24 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
               />
             </div>
           </div>
-          <DialogFooter className="flex-col gap-3 sm:flex-row sm:gap-2">
+          <DialogFooter className="flex flex-row gap-2 justify-end sm:justify-between items-center mt-4">
             {onDelete && card && (
-              <div className="w-full sm:flex-1 sm:justify-start order-last sm:order-first">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/10 justify-start sm:justify-center px-0 sm:px-4"
-                  onClick={() => {
-                    onOpenChange(false)
-                    onDelete(card)
-                  }}
-                  disabled={loading}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                onClick={() => {
+                  onOpenChange(false)
+                  onDelete(card)
+                }}
+                disabled={loading}
+                title="Delete Card"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
             )}
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-2 flex-1 sm:flex-none sm:ml-auto w-full sm:w-auto">
               <Button
                 type="button"
                 variant="outline"
@@ -144,7 +143,7 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
                 className="flex-1 sm:flex-none shadow-md"
               >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Changes
+                Save
               </Button>
             </div>
           </DialogFooter>

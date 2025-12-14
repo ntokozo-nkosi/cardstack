@@ -17,5 +17,6 @@ export async function query(
   return pool.query(text, values);
 }
 
-export default { query };
+const db = { query };
+export default db;
 

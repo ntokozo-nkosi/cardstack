@@ -116,7 +116,7 @@ export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: Crea
               type="button"
               variant="secondary"
               disabled={loading || !front.trim() || !back.trim() || front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT}
-              onClick={(e) => {
+              onClick={() => {
                 if (!front.trim() || !back.trim()) return;
                 handleSubmit({ preventDefault: () => { } } as React.FormEvent, true);
               }}
