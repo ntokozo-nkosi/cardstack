@@ -191,14 +191,15 @@ export default function DeckDetailPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
-      <div className="mb-8">
-        <Button variant="ghost" size="sm" asChild className="mb-6">
-          <Link href="/">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Decks
-          </Link>
-        </Button>
+      <Link 
+        href="/" 
+        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft size={16} />
+        Back to Decks
+      </Link>
 
+      <div className="mb-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             {isEditingTitle ? (
@@ -236,17 +237,15 @@ export default function DeckDetailPage() {
             </p>
           </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-            <Button
-              variant="ghost"
-              size="icon-sm"
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+            <button
               onClick={() => setDeleteDeckDialogOpen(true)}
-              className="self-start text-muted-foreground hover:text-foreground sm:self-auto"
+              className="inline-flex items-center gap-2 self-start px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors sm:self-auto"
               aria-label="Delete deck"
-              title="Delete deck"
             >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+              <Trash2 size={16} />
+              Delete
+            </button>
 
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               {deck.cards.length > 0 && (
