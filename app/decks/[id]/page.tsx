@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit, Trash2, Play, Pencil, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,6 +12,13 @@ import { EditCardDialog } from '@/components/edit-card-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { AddToCollectionDialog } from '@/components/add-to-collection-dialog'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Card {
   id: string
@@ -71,7 +78,6 @@ export default function DeckDetailPage() {
     if (isEditingTitle && titleInputRef.current) {
       const input = titleInputRef.current
       input.focus()
-      // Place cursor at the end instead of selecting all
       const length = input.value.length
       input.setSelectionRange(length, length)
     }
@@ -183,28 +189,26 @@ export default function DeckDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Skeleton className="h-4 w-32" />
         </div>
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2 w-full max-w-md">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-full" />
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4 w-full max-w-md">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Skeleton className="h-10 w-full sm:w-24" />
-            <Skeleton className="h-10 w-full sm:w-32" />
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-32" />
           </div>
         </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-card rounded-lg border p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 rounded-xl border p-5">
               <div className="space-y-3">
-                <div className="flex justify-between gap-4">
-                  <Skeleton className="h-4 w-full max-w-[45%]" />
-                  <Skeleton className="h-4 w-full max-w-[45%]" />
-                </div>
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
               </div>
             </div>
           ))}
@@ -216,20 +220,20 @@ export default function DeckDetailPage() {
   if (!deck) return null
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href="/"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 -ml-2 pl-2 pr-3 rounded-md hover:bg-muted/50"
+        className="group mb-6 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft size={16} />
+        <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
         Back to Decks
       </Link>
 
-      <div className="mb-8">
+      <div className="mb-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             {isEditingTitle ? (
-              <div className="relative mb-1">
+              <div className="relative mb-2">
                 <input
                   ref={titleInputRef}
                   type="text"
@@ -238,98 +242,118 @@ export default function DeckDetailPage() {
                   onBlur={saveTitle}
                   onKeyDown={handleTitleKeyDown}
                   disabled={isSavingTitle}
-                  className="w-full border-0 border-b-2 border-primary bg-transparent px-0 py-0 text-3xl font-semibold tracking-tight outline-none transition-colors focus:border-primary disabled:opacity-50"
+                  className="w-full border-0 border-b-2 border-primary bg-transparent px-0 py-1 text-3xl font-bold tracking-tight outline-none transition-colors focus:border-primary disabled:opacity-50 sm:text-4xl"
                 />
                 {isSavingTitle && (
                   <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 )}
               </div>
             ) : (
-              <div className="group mb-1 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
-                <h1 className="truncate text-3xl font-semibold tracking-tight transition-colors group-hover:text-primary">
+              <div className="group mb-2 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
+                <h1 className="truncate text-3xl font-bold tracking-tight transition-colors group-hover:text-primary/90 sm:text-4xl">
                   {deck.name}
                 </h1>
-                <Pencil className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary sm:h-5 sm:w-5" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Pencil className="h-4 w-4 text-muted-foreground" />
+                </Button>
               </div>
             )}
 
-            {deck.description && (
-              <p className="mt-2 text-sm text-muted-foreground">{deck.description}</p>
-            )}
-            <p className="mt-2 text-sm text-muted-foreground">
-              {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
-            </p>
+            <div className="flex flex-col gap-1 text-muted-foreground">
+              {deck.description && (
+                <p className="text-lg">{deck.description}</p>
+              )}
+              <div className="flex items-center text-sm font-medium mt-1">
+                <Library className="mr-2 h-4 w-4" />
+                {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
+              </div>
+            </div>
           </div>
 
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="inline-flex items-center justify-center gap-2"
-                onClick={() => setAddToCollectionDialogOpen(true)}
-              >
-                <Plus size={16} />
-                Add to Collection
-              </Button>
-              <button
-                onClick={() => setDeleteDeckDialogOpen(true)}
-                className="inline-flex items-center justify-center gap-2 self-start px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors sm:self-auto"
-                aria-label="Delete deck"
-              >
-                <Trash2 size={16} />
-                Delete
-              </button>
-            </div>
-
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <div className="flex items-center gap-2 self-start sm:self-auto">
               {deck.cards.length > 0 && (
-                <Button asChild className="w-full sm:w-auto h-11 sm:h-9">
+                <Button asChild size="lg" className="shadow-sm">
                   <Link href={`/decks/${id}/study`}>
-                    <Play className="mr-2 h-4 w-4" />
-                    Study
+                    <Play className="mr-2 h-4 w-4 fill-current" />
+                    Study Deck
                   </Link>
                 </Button>
               )}
-              <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto h-11 sm:h-9">
-                <Plus className="mr-2 h-4 w-4" />
+              <Button onClick={() => setCreateDialogOpen(true)} size="lg" variant={deck.cards.length > 0 ? "secondary" : "default"}>
+                <Plus className="mr-2 h-5 w-5" />
                 Add Card
               </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-10">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setAddToCollectionDialogOpen(true)}>
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    Add to Collection
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDeleteDeckDialogOpen(true)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Deck
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
       </div>
 
       {deck.cards.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-base text-muted-foreground">
-            No cards yet. Add your first card to get started!
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-24 text-center animate-in fade-in-50">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted/50 mb-6">
+            <Plus className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-semibold">This deck is empty</h3>
+          <p className="mt-2 text-muted-foreground max-w-sm mx-auto mb-8">
+            Add cards to this deck to start studying.
           </p>
+          <Button onClick={() => setCreateDialogOpen(true)} size="lg">
+            <Plus className="mr-2 h-4 w-4" />
+            Create First Card
+          </Button>
         </div>
       ) : (
-        <div className="space-y-2.5 sm:space-y-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {deck.cards.map((card) => (
-            <Card key={card.id} className="py-0 hover:bg-muted/50 active:bg-muted transition-colors cursor-pointer" onClick={() => handleEdit(card)}>
-              <CardContent className="p-4 sm:p-5">
-                <div className="flex items-start justify-between gap-3 sm:gap-4">
-                  <p className="whitespace-pre-wrap text-sm sm:text-sm leading-relaxed flex-1 min-w-0 py-1">{card.front}</p>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 sm:h-8 sm:w-8 flex-shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleEdit(card)
-                    }}
-                    aria-label="Edit card"
-                    title="Edit"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+            <div
+              key={card.id}
+              className="group relative flex flex-col justify-between rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md hover:border-muted-foreground/30 cursor-pointer"
+              onClick={() => handleEdit(card)}
+            >
+              <div className="mb-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Front</h4>
+                <p className="text-base leading-relaxed whitespace-pre-wrap">{card.front}</p>
+              </div>
+
+              <div className="flex items-end justify-between pt-4 border-t border-border/50">
+                <div className="text-xs text-muted-foreground italic truncate max-w-[70%] opacity-0 transition-opacity group-hover:opacity-100">
+                  Click to edit details
                 </div>
-              </CardContent>
-            </Card>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleEdit(card)
+                  }}
+                  aria-label="Edit card"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
       )}
