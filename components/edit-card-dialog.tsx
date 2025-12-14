@@ -19,6 +19,8 @@ interface EditCardDialogProps {
   onDelete?: (card: { id: string; front: string; back: string }) => void
 }
 
+const MAX_CHAR_LIMIT = 200
+
 export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }: EditCardDialogProps) {
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
@@ -69,25 +71,39 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-front">Front</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="edit-front">Front</Label>
+                <span className={`text-xs ${front.length > MAX_CHAR_LIMIT ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                  {front.length}/{MAX_CHAR_LIMIT}
+                </span>
+              </div>
               <Textarea
                 id="edit-front"
                 value={front}
                 onChange={(e) => setFront(e.target.value)}
                 placeholder="Enter the question or prompt"
                 rows={3}
+                maxLength={MAX_CHAR_LIMIT}
                 required
+                className={front.length > MAX_CHAR_LIMIT ? 'border-destructive' : ''}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-back">Back</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="edit-back">Back</Label>
+                <span className={`text-xs ${back.length > MAX_CHAR_LIMIT ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                  {back.length}/{MAX_CHAR_LIMIT}
+                </span>
+              </div>
               <Textarea
                 id="edit-back"
                 value={back}
                 onChange={(e) => setBack(e.target.value)}
                 placeholder="Enter the answer"
                 rows={3}
+                maxLength={MAX_CHAR_LIMIT}
                 required
+                className={back.length > MAX_CHAR_LIMIT ? 'border-destructive' : ''}
               />
             </div>
           </div>
@@ -121,7 +137,7 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess, onDelete }
               </Button>
               <Button
                 type="submit"
-                disabled={loading || !front.trim() || !back.trim()}
+                disabled={loading || !front.trim() || !back.trim() || front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT}
                 className="flex-1 sm:flex-none"
               >
                 {loading ? 'Saving...' : 'Save Changes'}

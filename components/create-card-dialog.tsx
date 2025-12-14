@@ -13,6 +13,8 @@ interface CreateCardDialogProps {
   onSuccess: () => void
 }
 
+const MAX_CHAR_LIMIT = 180
+
 export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: CreateCardDialogProps) {
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
@@ -56,25 +58,39 @@ export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: Crea
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="front">Front</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="front">Front</Label>
+                <span className={`text-xs ${front.length > MAX_CHAR_LIMIT ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                  {front.length}/{MAX_CHAR_LIMIT}
+                </span>
+              </div>
               <Textarea
                 id="front"
                 value={front}
                 onChange={(e) => setFront(e.target.value)}
                 placeholder="Enter the question or prompt"
                 rows={3}
+                maxLength={MAX_CHAR_LIMIT}
                 required
+                className={front.length > MAX_CHAR_LIMIT ? 'border-destructive' : ''}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="back">Back</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="back">Back</Label>
+                <span className={`text-xs ${back.length > MAX_CHAR_LIMIT ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                  {back.length}/{MAX_CHAR_LIMIT}
+                </span>
+              </div>
               <Textarea
                 id="back"
                 value={back}
                 onChange={(e) => setBack(e.target.value)}
                 placeholder="Enter the answer"
                 rows={3}
+                maxLength={MAX_CHAR_LIMIT}
                 required
+                className={back.length > MAX_CHAR_LIMIT ? 'border-destructive' : ''}
               />
             </div>
           </div>
@@ -82,7 +98,7 @@ export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: Crea
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !front.trim() || !back.trim()}>
+            <Button type="submit" disabled={loading || !front.trim() || !back.trim() || front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT}>
               {loading ? 'Creating...' : 'Create Card'}
             </Button>
           </DialogFooter>

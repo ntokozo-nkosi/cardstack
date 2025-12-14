@@ -107,8 +107,8 @@ export default function StudyModePage() {
   const currentCard = shuffledCards[currentIndex]
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="container mx-auto p-4 sm:p-8">
+    <div className="h-[calc(100dvh-56px)] md:h-dvh flex flex-col overflow-hidden">
+      <div className="container mx-auto p-4 sm:p-8 shrink-0">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <Button variant="ghost" asChild className="w-full sm:w-auto">
             <Link href={`/decks/${id}`}>
@@ -131,13 +131,13 @@ export default function StudyModePage() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 pb-8 sm:pb-16">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 min-h-0">
         <div className="w-full max-w-2xl">
           <Flashcard key={currentCard.id} front={currentCard.front} back={currentCard.back} />
         </div>
       </div>
 
-      <div className="container mx-auto p-4 sm:p-8">
+      <div className="container mx-auto p-4 sm:p-8 shrink-0">
         <div className="flex justify-center gap-2 sm:gap-4">
           <Button
             variant="outline"
