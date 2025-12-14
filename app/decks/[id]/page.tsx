@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Edit, Trash2, Play, Pencil, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import { CreateCardDialog } from '@/components/create-card-dialog'
 import { EditCardDialog } from '@/components/edit-card-dialog'
@@ -182,8 +183,32 @@ export default function DeckDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading deck...</p>
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
+        <div className="mb-6">
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2 w-full max-w-md">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Skeleton className="h-10 w-full sm:w-24" />
+            <Skeleton className="h-10 w-full sm:w-32" />
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-card rounded-lg border p-4 sm:p-5">
+              <div className="space-y-3">
+                <div className="flex justify-between gap-4">
+                  <Skeleton className="h-4 w-full max-w-[45%]" />
+                  <Skeleton className="h-4 w-full max-w-[45%]" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
