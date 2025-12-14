@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit, Trash2, Play } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Trash2, Play, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { CreateCardDialog } from '@/components/create-card-dialog'
 import { EditCardDialog } from '@/components/edit-card-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { toast } from 'sonner'
 
 interface Card {
   id: string
@@ -33,7 +35,11 @@ export default function DeckDetailPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteDeckDialogOpen, setDeleteDeckDialogOpen] = useState(false)
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editedTitle, setEditedTitle] = useState('')
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -58,6 +64,66 @@ export default function DeckDetailPage() {
     fetchDeck()
   }, [fetchDeck])
 
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus()
+      titleInputRef.current.select()
+    }
+  }, [isEditingTitle])
+
+  const startEditingTitle = () => {
+    if (deck) {
+      setEditedTitle(deck.name)
+      setIsEditingTitle(true)
+    }
+  }
+
+  const cancelEditingTitle = () => {
+    setEditedTitle(deck?.name || '')
+    setIsEditingTitle(false)
+  }
+
+  const saveTitle = async () => {
+    if (!editedTitle.trim()) {
+      setEditedTitle(deck?.name || '')
+      setIsEditingTitle(false)
+      return
+    }
+
+    if (editedTitle.trim() === deck?.name) {
+      setIsEditingTitle(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/decks/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: editedTitle.trim() })
+      })
+
+      if (!response.ok) throw new Error('Failed to update deck name')
+
+      toast.success('Deck name updated')
+      await fetchDeck()
+      setIsEditingTitle(false)
+    } catch (error) {
+      console.error('Error updating deck name:', error)
+      toast.error('Failed to update deck name')
+      setEditedTitle(deck?.name || '')
+    }
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      saveTitle()
+    } else if (e.key === 'Escape') {
+      cancelEditingTitle()
+    }
+  }
+
   const handleEdit = (card: Card) => {
     setSelectedCard(card)
     setEditDialogOpen(true)
@@ -78,11 +144,31 @@ export default function DeckDetailPage() {
 
       if (!response.ok) throw new Error('Failed to delete card')
 
+      toast.success('Card deleted')
       await fetchDeck()
       setDeleteDialogOpen(false)
       setSelectedCard(null)
     } catch (error) {
       console.error('Error deleting card:', error)
+      toast.error('Failed to delete card')
+    }
+  }
+
+  const confirmDeleteDeck = async () => {
+    if (!deck) return
+
+    try {
+      const response = await fetch(`/api/decks/${deck.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) throw new Error('Failed to delete deck')
+
+      toast.success('Deck deleted')
+      router.push('/')
+    } catch (error) {
+      console.error('Error deleting deck:', error)
+      toast.error('Failed to delete deck')
     }
   }
 
@@ -97,45 +183,77 @@ export default function DeckDetailPage() {
   if (!deck) return null
 
   return (
-    <div className="container mx-auto p-4 sm:p-8">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
       <div className="mb-8">
-        <Button variant="ghost" asChild className="mb-4">
+        <Button variant="ghost" size="sm" asChild className="mb-6">
           <Link href="/">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Decks
           </Link>
         </Button>
 
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
-          <div className="flex-1">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2">{deck.name}</h1>
-            {deck.description && (
-              <p className="text-muted-foreground">{deck.description}</p>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onBlur={saveTitle}
+                onKeyDown={handleTitleKeyDown}
+                className="w-full rounded border border-primary bg-background px-3 py-2 text-2xl font-semibold tracking-tight outline-none focus:ring-2 focus:ring-primary/20 sm:text-3xl"
+              />
+            ) : (
+              <div className="group mb-1 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
+                <h1 className="truncate text-2xl font-semibold tracking-tight transition-colors group-hover:text-primary sm:text-3xl">
+                  {deck.name}
+                </h1>
+                <Pencil className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary sm:h-5 sm:w-5" />
+              </div>
             )}
-            <p className="text-sm text-muted-foreground mt-2">
+            
+            {deck.description && (
+              <p className="mt-2 text-sm text-muted-foreground">{deck.description}</p>
+            )}
+            <p className="mt-2 text-sm text-muted-foreground">
               {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {deck.cards.length > 0 && (
-              <Button asChild className="w-full sm:w-auto">
-                <Link href={`/decks/${id}/study`}>
-                  <Play className="mr-2 h-4 w-4" />
-                  Study
-                </Link>
-              </Button>
-            )}
-            <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Card
+
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setDeleteDeckDialogOpen(true)}
+              className="self-start text-muted-foreground hover:text-foreground sm:self-auto"
+              aria-label="Delete deck"
+              title="Delete deck"
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
+
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              {deck.cards.length > 0 && (
+                <Button asChild size="sm" className="w-full sm:w-auto">
+                  <Link href={`/decks/${id}/study`}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Study
+                  </Link>
+                </Button>
+              )}
+              <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Card
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       {deck.cards.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-xl text-muted-foreground mb-4">
+          <p className="text-base text-muted-foreground mb-4">
             No cards yet. Add your first card to get started!
           </p>
           <Button onClick={() => setCreateDialogOpen(true)}>
@@ -144,39 +262,41 @@ export default function DeckDetailPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {deck.cards.map((card) => (
-            <Card key={card.id}>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 w-full">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
+            <Card key={card.id} className="py-0">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="grid w-full min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                         Front
                       </p>
-                      <p className="whitespace-pre-wrap">{card.front}</p>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{card.front}</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                         Back
                       </p>
-                      <p className="whitespace-pre-wrap">{card.back}</p>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{card.back}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
+                  <div className="flex gap-2 self-end sm:self-start">
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon-sm"
                       onClick={() => handleEdit(card)}
-                      className="flex-1 sm:flex-none"
+                      aria-label="Edit card"
+                      title="Edit"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon-sm"
                       onClick={() => handleDelete(card)}
-                      className="flex-1 sm:flex-none"
+                      aria-label="Delete card"
+                      title="Delete"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -208,6 +328,14 @@ export default function DeckDetailPage() {
         onConfirm={confirmDelete}
         title="Delete Card"
         description="Are you sure you want to delete this card? This action cannot be undone."
+      />
+
+      <DeleteConfirmDialog
+        open={deleteDeckDialogOpen}
+        onOpenChange={setDeleteDeckDialogOpen}
+        onConfirm={confirmDeleteDeck}
+        title="Delete Deck"
+        description={`Are you sure you want to delete "${deck?.name}"? This will also delete all cards in this deck. This action cannot be undone.`}
       />
     </div>
   )

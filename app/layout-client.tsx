@@ -2,6 +2,8 @@
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { Toaster } from "@/components/ui/sonner";
 
 export function RootLayoutClient({ 
   children,
@@ -10,14 +12,14 @@ export function RootLayoutClient({
 }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gray-50">
-        <AppSidebar />
-        <SidebarInset className="flex-1 overflow-hidden">
-          <main className="flex-1 h-full overflow-auto">
-            {children}
-          </main>
-        </SidebarInset>
-      </div>
+      <AppSidebar />
+      <SidebarInset>
+        <MobileHeader />
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
+      </SidebarInset>
+      <Toaster />
     </SidebarProvider>
   );
 }
