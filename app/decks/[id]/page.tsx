@@ -278,13 +278,9 @@ export default function DeckDetailPage() {
 
       {deck.cards.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-base text-muted-foreground mb-4">
+          <p className="text-base text-muted-foreground">
             No cards yet. Add your first card to get started!
           </p>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Card
-          </Button>
         </div>
       ) : (
         <div className="space-y-2.5 sm:space-y-3">

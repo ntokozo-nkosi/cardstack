@@ -14,6 +14,7 @@ interface AddDeckToCollectionDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     collectionId: string
+    existingDeckIds: string[]
     onSuccess: () => void
 }
 
@@ -21,6 +22,7 @@ export function AddDeckToCollectionDialog({
     open,
     onOpenChange,
     collectionId,
+    existingDeckIds,
     onSuccess
 }: AddDeckToCollectionDialogProps) {
     const [decks, setDecks] = useState<Deck[]>([])
@@ -96,11 +98,13 @@ export function AddDeckToCollectionDialog({
                                 <option value="" disabled>
                                     {fetchingDecks ? "Loading decks..." : "Select a deck"}
                                 </option>
-                                {decks.map((deck) => (
-                                    <option key={deck.id} value={deck.id}>
-                                        {deck.name}
-                                    </option>
-                                ))}
+                                {decks
+                                    .filter((deck) => !existingDeckIds.includes(deck.id))
+                                    .map((deck) => (
+                                        <option key={deck.id} value={deck.id}>
+                                            {deck.name}
+                                        </option>
+                                    ))}
                             </select>
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Layers } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, FolderOpen } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -55,7 +55,7 @@ export function AppSidebar() {
                     className="w-full px-3 py-2 hover:bg-gray-100 data-[active=true]:bg-blue-50 data-[active=true]:text-blue-700 rounded-lg transition-colors"
                     tooltip="Collections"
                   >
-                    <Layers size={16} className="shrink-0" />
+                    <FolderOpen size={16} className="shrink-0" />
                     <span className="text-sm group-data-[collapsible=icon]:hidden">Collections</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

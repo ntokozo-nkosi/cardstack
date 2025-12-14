@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, Trash2, ArrowLeft, Play, X } from 'lucide-react'
+import { Plus, ArrowLeft, Play, X, Pencil, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AddDeckToCollectionDialog } from '@/components/add-deck-to-collection-dialog'
 import { toast } from 'sonner'
@@ -34,8 +34,12 @@ export default function CollectionDetailsPage() {
     const [addDeckDialogOpen, setAddDeckDialogOpen] = useState(false)
     const [deleteDeckDialogOpen, setDeleteDeckDialogOpen] = useState(false)
     const [selectedDeckToRemove, setSelectedDeckToRemove] = useState<Deck | null>(null)
+    const [isEditingTitle, setIsEditingTitle] = useState(false)
+    const [editedTitle, setEditedTitle] = useState('')
+    const [isSavingTitle, setIsSavingTitle] = useState(false)
+    const titleInputRef = useRef<HTMLInputElement>(null)
 
-    const fetchCollection = async () => {
+    const fetchCollection = useCallback(async () => {
         try {
             const response = await fetch(`/api/collections/${params.id}`)
             if (!response.ok) {
@@ -53,13 +57,76 @@ export default function CollectionDetailsPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [params.id, router])
 
     useEffect(() => {
         if (params.id) {
             fetchCollection()
         }
-    }, [params.id, router])
+    }, [params.id, fetchCollection])
+
+    useEffect(() => {
+        if (isEditingTitle && titleInputRef.current) {
+            const input = titleInputRef.current
+            input.focus()
+            const length = input.value.length
+            input.setSelectionRange(length, length)
+        }
+    }, [isEditingTitle])
+
+    const startEditingTitle = () => {
+        if (collection) {
+            setEditedTitle(collection.name)
+            setIsEditingTitle(true)
+        }
+    }
+
+    const cancelEditingTitle = () => {
+        setEditedTitle(collection?.name || '')
+        setIsEditingTitle(false)
+    }
+
+    const saveTitle = async () => {
+        if (!editedTitle.trim()) {
+            setEditedTitle(collection?.name || '')
+            setIsEditingTitle(false)
+            return
+        }
+
+        if (editedTitle.trim() === collection?.name) {
+            setIsEditingTitle(false)
+            return
+        }
+
+        setIsSavingTitle(true)
+        try {
+            const response = await fetch(`/api/collections/${params.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: editedTitle.trim(), description: collection?.description })
+            })
+
+            if (!response.ok) throw new Error('Failed to update collection name')
+
+            toast.success('Collection name updated')
+            await fetchCollection()
+            setIsEditingTitle(false)
+        } catch (error) {
+            console.error('Error updating collection name:', error)
+            toast.error('Failed to update collection name')
+            setEditedTitle(collection?.name || '')
+        } finally {
+            setIsSavingTitle(false)
+        }
+    }
+
+    const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            saveTitle()
+        } else if (e.key === 'Escape') {
+            cancelEditingTitle()
+        }
+    }
 
     const handleRemoveDeck = (deck: Deck) => {
         setSelectedDeckToRemove(deck)
@@ -108,8 +175,33 @@ export default function CollectionDetailsPage() {
             </div>
 
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{collection.name}</h1>
+                <div className="min-w-0 flex-1">
+                    {isEditingTitle ? (
+                        <div className="relative mb-1">
+                            <input
+                                ref={titleInputRef}
+                                type="text"
+                                value={editedTitle}
+                                onChange={(e) => setEditedTitle(e.target.value)}
+                                onBlur={saveTitle}
+                                onKeyDown={handleTitleKeyDown}
+                                disabled={isSavingTitle}
+                                className="w-full border-0 border-b-2 border-primary bg-transparent px-0 py-0 text-2xl font-semibold tracking-tight outline-none transition-colors focus:border-primary disabled:opacity-50 sm:text-3xl"
+                            />
+                            {isSavingTitle && (
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="group mb-1 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
+                            <h1 className="truncate text-2xl font-semibold tracking-tight transition-colors group-hover:text-primary sm:text-3xl">
+                                {collection.name}
+                            </h1>
+                            <Pencil className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary sm:h-5 sm:w-5" />
+                        </div>
+                    )}
                     {collection.description && (
                         <p className="mt-1 text-sm text-muted-foreground">
                             {collection.description}
@@ -190,6 +282,7 @@ export default function CollectionDetailsPage() {
                 open={addDeckDialogOpen}
                 onOpenChange={setAddDeckDialogOpen}
                 collectionId={collection.id}
+                existingDeckIds={collection.decks.map(d => d.id)}
                 onSuccess={fetchCollection}
             />
 
