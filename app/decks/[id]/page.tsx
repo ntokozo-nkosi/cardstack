@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CreateCardDialog } from '@/components/create-card-dialog'
 import { EditCardDialog } from '@/components/edit-card-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { AddToCollectionDialog } from '@/components/add-to-collection-dialog'
 import { toast } from 'sonner'
 
 interface Card {
@@ -35,6 +36,7 @@ export default function DeckDetailPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteDeckDialogOpen, setDeleteDeckDialogOpen] = useState(false)
+  const [addToCollectionDialogOpen, setAddToCollectionDialogOpen] = useState(false)
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editedTitle, setEditedTitle] = useState('')
@@ -237,14 +239,24 @@ export default function DeckDetailPage() {
           </div>
 
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
-            <button
-              onClick={() => setDeleteDeckDialogOpen(true)}
-              className="inline-flex items-center justify-center gap-2 self-start px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors sm:self-auto"
-              aria-label="Delete deck"
-            >
-              <Trash2 size={16} />
-              Delete
-            </button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="inline-flex items-center justify-center gap-2"
+                onClick={() => setAddToCollectionDialogOpen(true)}
+              >
+                <Plus size={16} />
+                Add to Collection
+              </Button>
+              <button
+                onClick={() => setDeleteDeckDialogOpen(true)}
+                className="inline-flex items-center justify-center gap-2 self-start px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors sm:self-auto"
+                aria-label="Delete deck"
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
+            </div>
 
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               {deck.cards.length > 0 && (
@@ -314,6 +326,13 @@ export default function DeckDetailPage() {
         onOpenChange={setEditDialogOpen}
         onSuccess={fetchDeck}
         onDelete={handleDelete}
+      />
+
+      <AddToCollectionDialog
+        open={addToCollectionDialogOpen}
+        onOpenChange={setAddToCollectionDialogOpen}
+        deckId={id}
+        onSuccess={() => toast.success('Added to collection')}
       />
 
       <DeleteConfirmDialog

@@ -19,7 +19,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { toggleSidebar, state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  
+
   const isDecksActive = pathname?.startsWith('/decks') || pathname === '/' || false;
 
   return (
@@ -48,17 +48,28 @@ export function AppSidebar() {
                     <span className="text-sm group-data-[collapsible=icon]:hidden">Decks</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => router.push('/collections')}
+                    isActive={pathname?.startsWith('/collections')}
+                    className="w-full px-3 py-2 hover:bg-gray-100 data-[active=true]:bg-blue-50 data-[active=true]:text-blue-700 rounded-lg transition-colors"
+                    tooltip="Collections"
+                  >
+                    <Layers size={16} className="shrink-0" />
+                    <span className="text-sm group-data-[collapsible=icon]:hidden">Collections</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
-      
+
       {/* Fixed floating toggle button in the middle - hidden on mobile */}
       <button
         onClick={toggleSidebar}
         className="hidden md:flex fixed top-1/2 -translate-y-1/2 z-50 h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-        style={{ 
+        style={{
           left: isCollapsed ? 'calc(var(--sidebar-width-icon, 3rem) - 1.25rem)' : 'calc(var(--sidebar-width, 16rem) - 1.25rem)'
         }}
         title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
