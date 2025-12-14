@@ -108,15 +108,16 @@ export default function StudyModePage() {
 
   return (
     <div className="h-[calc(100dvh-56px)] md:h-dvh flex flex-col overflow-hidden">
-      <div className="container mx-auto p-4 sm:p-8 shrink-0">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <Button variant="ghost" asChild className="w-full sm:w-auto">
-            <Link href={`/decks/${id}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Deck
-            </Link>
-          </Button>
+      <div className="container mx-auto px-4 pt-4 pb-2 sm:px-8 sm:pt-10 sm:pb-4 shrink-0">
+        <Link
+          href={`/decks/${id}`}
+          className="mb-4 sm:mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 -ml-2 pl-2 pr-3 rounded-md hover:bg-muted/50"
+        >
+          <ArrowLeft size={16} />
+          Back to Deck
+        </Link>
 
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-8">
           <div className="text-center flex-1">
             <h1 className="text-xl sm:text-2xl font-bold">{deck.name}</h1>
             <p className="text-sm text-muted-foreground">
@@ -137,7 +138,7 @@ export default function StudyModePage() {
         </div>
       </div>
 
-      <div className="container mx-auto p-4 sm:p-8 shrink-0">
+      <div className="container mx-auto px-4 pt-2 pb-3 sm:p-8 shrink-0">
         <div className="flex justify-center gap-2 sm:gap-4">
           <Button
             variant="outline"

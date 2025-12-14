@@ -13,7 +13,7 @@ interface CreateCardDialogProps {
   onSuccess: () => void
 }
 
-const MAX_CHAR_LIMIT = 180
+const MAX_CHAR_LIMIT = 200
 
 export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: CreateCardDialogProps) {
   const [front, setFront] = useState('')
