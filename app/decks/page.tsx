@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DeckCard } from '@/components/deck-card'
+import { Play } from 'lucide-react'
 import { CreateDeckDialog } from '@/components/create-deck-dialog'
-import { EditDeckDialog } from '@/components/edit-deck-dialog'
-import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 
 interface Deck {
   id: string
@@ -21,9 +20,6 @@ export default function DecksPage() {
   const [decks, setDecks] = useState<Deck[]>([])
   const [loading, setLoading] = useState(true)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null)
 
   const fetchDecks = async () => {
     try {
@@ -42,34 +38,6 @@ export default function DecksPage() {
     fetchDecks()
   }, [])
 
-  const handleEdit = (deck: Deck) => {
-    setSelectedDeck(deck)
-    setEditDialogOpen(true)
-  }
-
-  const handleDelete = (deck: Deck) => {
-    setSelectedDeck(deck)
-    setDeleteDialogOpen(true)
-  }
-
-  const confirmDelete = async () => {
-    if (!selectedDeck) return
-
-    try {
-      const response = await fetch(`/api/decks/${selectedDeck.id}`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) throw new Error('Failed to delete deck')
-
-      await fetchDecks()
-      setDeleteDialogOpen(false)
-      setSelectedDeck(null)
-    } catch (error) {
-      console.error('Error deleting deck:', error)
-    }
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -82,8 +50,8 @@ export default function DecksPage() {
     <div className="container mx-auto p-4 sm:p-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">CardStack</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1">My Decks</h1>
+          <p className="text-sm text-muted-foreground">
             Create and study flashcard decks
           </p>
         </div>
@@ -104,15 +72,45 @@ export default function DecksPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {decks.map((deck) => (
-            <DeckCard
-              key={deck.id}
-              deck={deck}
-              onEdit={() => handleEdit(deck)}
-              onDelete={() => handleDelete(deck)}
-            />
-          ))}
+        <div className="rounded-lg border bg-card">
+          <ul className="divide-y">
+            {decks.map((deck) => (
+              <li key={deck.id} className="p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/decks/${deck.id}`}
+                      className="block font-medium leading-6 hover:underline line-clamp-1"
+                    >
+                      {deck.name}
+                    </Link>
+                    {deck.description && (
+                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                        {deck.description}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {deck._count.cards} {deck._count.cards === 1 ? 'card' : 'cards'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:justify-end">
+                    <Button asChild size="sm" className="min-w-[80px]">
+                      <Link href={`/decks/${deck.id}`}>View</Link>
+                    </Button>
+
+                    {deck._count.cards > 0 && (
+                      <Button asChild variant="secondary" size="sm" className="px-2">
+                        <Link href={`/decks/${deck.id}/study`} aria-label={`Study ${deck.name}`}>
+                          <Play className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -120,21 +118,6 @@ export default function DecksPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSuccess={fetchDecks}
-      />
-
-      <EditDeckDialog
-        deck={selectedDeck}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onSuccess={fetchDecks}
-      />
-
-      <DeleteConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onConfirm={confirmDelete}
-        title="Delete Deck"
-        description={`Are you sure you want to delete "${selectedDeck?.name}"? This will also delete all cards in this deck. This action cannot be undone.`}
       />
     </div>
   )
