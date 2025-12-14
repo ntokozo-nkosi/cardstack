@@ -3,12 +3,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, ArrowLeft, Play, X, Pencil, Loader2 } from 'lucide-react'
+import { Plus, ArrowLeft, Play, X, Pencil, Loader2, Library } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AddDeckToCollectionDialog } from '@/components/add-deck-to-collection-dialog'
 import { toast } from 'sonner'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { cn } from '@/lib/utils'
 
 interface Deck {
     id: string
@@ -158,30 +159,30 @@ export default function CollectionDetailsPage() {
 
     if (loading) {
         return (
-            <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
+            <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div className="mb-6">
                     <Skeleton className="h-4 w-32" />
                 </div>
-                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="space-y-2 w-full max-w-md">
-                        <Skeleton className="h-8 w-64" />
-                        <Skeleton className="h-4 w-full" />
+                <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="space-y-4 w-full max-w-md">
+                        <Skeleton className="h-10 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
                     </div>
                     <Skeleton className="h-10 w-32" />
                 </div>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="rounded-lg border p-4 sm:p-5">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="space-y-2">
-                                    <Skeleton className="h-5 w-40" />
-                                    <Skeleton className="h-4 w-64" />
-                                    <Skeleton className="h-3 w-20" />
-                                </div>
+                        <div key={i} className="flex h-48 flex-col justify-between rounded-xl border p-6">
+                            <div className="space-y-3">
+                                <Skeleton className="h-6 w-3/4" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-1/2" />
+                            </div>
+                            <div className="flex items-center justify-between pt-4">
+                                <Skeleton className="h-4 w-16" />
                                 <div className="flex gap-2">
-                                    <Skeleton className="h-9 w-20" />
-                                    <Skeleton className="h-9 w-9" />
-                                    <Skeleton className="h-9 w-9" />
+                                    <Skeleton className="h-8 w-8" />
+                                    <Skeleton className="h-8 w-8" />
                                 </div>
                             </div>
                         </div>
@@ -194,18 +195,21 @@ export default function CollectionDetailsPage() {
     if (!collection) return null
 
     return (
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
+        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
             <div className="mb-6">
-                <Link href="/collections" className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
+                <Link
+                    href="/collections"
+                    className="group inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
                     Back to Collections
                 </Link>
             </div>
 
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1">
                     {isEditingTitle ? (
-                        <div className="relative mb-1">
+                        <div className="relative mb-2">
                             <input
                                 ref={titleInputRef}
                                 type="text"
@@ -214,95 +218,115 @@ export default function CollectionDetailsPage() {
                                 onBlur={saveTitle}
                                 onKeyDown={handleTitleKeyDown}
                                 disabled={isSavingTitle}
-                                className="w-full border-0 border-b-2 border-primary bg-transparent px-0 py-0 text-2xl font-semibold tracking-tight outline-none transition-colors focus:border-primary disabled:opacity-50 sm:text-3xl"
+                                className="w-full border-0 border-b-2 border-primary bg-transparent px-0 py-1 text-3xl font-bold tracking-tight outline-none transition-colors focus:border-primary disabled:opacity-50 sm:text-4xl"
                             />
                             {isSavingTitle && (
                                 <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                                 </div>
                             )}
                         </div>
                     ) : (
-                        <div className="group mb-1 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
-                            <h1 className="truncate text-2xl font-semibold tracking-tight transition-colors group-hover:text-primary sm:text-3xl">
+                        <div className="group mb-2 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
+                            <h1 className="truncate text-3xl font-bold tracking-tight transition-colors group-hover:text-primary/90 sm:text-4xl">
                                 {collection.name}
                             </h1>
-                            <Pencil className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary sm:h-5 sm:w-5" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100">
+                                <Pencil className="h-4 w-4 text-muted-foreground" />
+                            </Button>
                         </div>
                     )}
                     {collection.description && (
-                        <p className="mt-1 text-sm text-muted-foreground">
+                        <p className="text-lg text-muted-foreground">
                             {collection.description}
                         </p>
                     )}
                 </div>
-                <Button onClick={() => setAddDeckDialogOpen(true)} className="w-full sm:w-auto">
-                    <Plus className="mr-2 h-4 w-4" />
+                <Button onClick={() => setAddDeckDialogOpen(true)} size="lg" className="shrink-0 shadow-sm">
+                    <Plus className="mr-2 h-5 w-5" />
                     Add Deck
                 </Button>
             </div>
 
             {collection.decks.length === 0 ? (
-                <div className="text-center py-16 border rounded-lg bg-muted/10 border-dashed">
-                    <p className="text-base text-muted-foreground mb-4">
-                        No decks in this collection yet.
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-24 text-center animate-in fade-in-50">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted/50 mb-6">
+                        <Library className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold">No decks in this collection</h3>
+                    <p className="mt-2 text-muted-foreground max-w-sm mx-auto mb-8">
+                        Add existing decks to this collection to organize your study materials.
                     </p>
-                    <Button variant="outline" onClick={() => setAddDeckDialogOpen(true)}>
+                    <Button onClick={() => setAddDeckDialogOpen(true)} size="lg" variant="outline">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Deck
+                        Add Existing Deck
                     </Button>
                 </div>
             ) : (
-                <div className="rounded-lg border bg-card">
-                    <ul className="divide-y divide-border">
-                        {collection.decks.map((deck) => (
-                            <li key={deck.id} className="p-4 transition-colors hover:bg-muted/30 sm:p-5">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="min-w-0">
-                                        <Link
-                                            href={`/decks/${deck.id}`}
-                                            className="block font-medium leading-6 hover:underline line-clamp-1"
-                                        >
-                                            {deck.name}
-                                        </Link>
-                                        {deck.description && (
-                                            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                                                {deck.description}
-                                            </p>
-                                        )}
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {deck._count.cards} {deck._count.cards === 1 ? 'card' : 'cards'}
-                                        </p>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {collection.decks.map((deck) => (
+                        <div
+                            key={deck.id}
+                            className="group relative flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:border-muted-foreground/20"
+                        >
+                            <div className="flex flex-1 flex-col p-6">
+                                <div className="flex items-start justify-between gap-4">
+                                    <Link
+                                        href={`/decks/${deck.id}`}
+                                        className="font-semibold text-xl leading-tight hover:underline decoration-2 underline-offset-4 line-clamp-1"
+                                    >
+                                        {deck.name}
+                                    </Link>
+                                </div>
+
+                                <p className={cn(
+                                    "mt-3 text-sm text-muted-foreground line-clamp-3",
+                                    !deck.description && "italic opacity-50"
+                                )}>
+                                    {deck.description || "No description provided."}
+                                </p>
+                            </div>
+
+                            <div className="mt-auto border-t bg-muted/20 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center text-sm font-medium text-muted-foreground">
+                                        <span className="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-background border px-2 shadow-sm text-xs">
+                                            {deck._count.cards}
+                                        </span>
+                                        <span className="ml-2">{deck._count.cards === 1 ? 'card' : 'cards'}</span>
                                     </div>
 
-                                    <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:justify-end">
-                                        <Button asChild size="sm" className="min-w-[76px]">
+                                    <div className="flex items-center gap-2">
+                                        <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
                                             <Link href={`/decks/${deck.id}`}>View</Link>
                                         </Button>
 
                                         {deck._count.cards > 0 && (
-                                            <Button asChild variant="secondary" size="icon-sm" aria-label={`Study ${deck.name}`}>
-                                                <Link href={`/decks/${deck.id}/study`} aria-label={`Study ${deck.name}`}>
-                                                    <Play className="h-4 w-4" />
+                                            <Button asChild size="sm" className="h-8 gap-1.5 px-3">
+                                                <Link href={`/decks/${deck.id}/study`}>
+                                                    <Play className="h-3.5 w-3.5 fill-current" />
+                                                    Study
                                                 </Link>
                                             </Button>
                                         )}
 
+                                        <div className="h-4 w-px bg-border mx-1" />
+
                                         <Button
                                             variant="ghost"
-                                            size="icon-sm"
+                                            size="icon"
                                             onClick={() => handleRemoveDeck(deck)}
-                                            aria-label={`Remove ${deck.name} from collection`}
-                                            className="text-muted-foreground hover:text-destructive"
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                             title="Remove from collection"
                                         >
                                             <X className="h-4 w-4" />
+                                            <span className="sr-only">Remove from collection</span>
                                         </Button>
                                     </div>
                                 </div>
-                            </li>
-                        ))}
-                    </ul>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
