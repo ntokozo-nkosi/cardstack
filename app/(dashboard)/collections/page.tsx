@@ -128,10 +128,7 @@ export default function CollectionsPage() {
                     <p className="mt-2 text-muted-foreground max-w-sm mx-auto mb-8">
                         Create collections to organize your decks by topic, semester, or category.
                     </p>
-                    <Button onClick={() => setCreateDialogOpen(true)} size="lg">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create First Collection
-                    </Button>
+
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

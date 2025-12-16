@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -116,7 +117,7 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
               {initialDeckId ? 'Add a new flashcard to this deck.' : 'Add a new flashcard to one of your decks.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           {!initialDeckId && (
             <div className="space-y-2">
               <Label htmlFor="deck-select" className="text-base font-semibold">Select Deck</Label>
@@ -126,16 +127,20 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
                   <span className="text-sm text-muted-foreground">Loading decks...</span>
                 </div>
               ) : decks.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground">You don't have any decks yet.</p>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => onOpenChange(false)}
-                    className="mt-2"
-                  >
-                    Create a Deck First
-                  </Button>
+                <div className="py-4">
+                  <div className="py-2">
+                    <p className="text-muted-foreground mb-2">You don't have any decks yet.</p>
+                    <Button
+                      asChild
+                      variant="link"
+                      className="p-0 h-auto font-normal text-primary hover:no-underline"
+                      onClick={() => onOpenChange(false)}
+                    >
+                      <Link href="/decks">
+                        Create a Deck First
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <Select value={selectedDeckId} onValueChange={setSelectedDeckId}>
@@ -153,7 +158,7 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
               )}
             </div>
           )}
-          
+
           <div className="space-y-6 py-2">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -206,8 +211,8 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
             <Button
               type="button"
               variant="secondary"
-              disabled={loading || !front.trim() || !back.trim() || 
-                front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT || 
+              disabled={loading || !front.trim() || !back.trim() ||
+                front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT ||
                 (!initialDeckId && !selectedDeckId) || decks.length === 0}
               onClick={() => {
                 if (!front.trim() || !back.trim()) return;
@@ -221,8 +226,8 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
             </Button>
             <Button
               type="submit"
-              disabled={loading || !front.trim() || !back.trim() || 
-                front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT || 
+              disabled={loading || !front.trim() || !back.trim() ||
+                front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT ||
                 (!initialDeckId && !selectedDeckId) || decks.length === 0}
               className="w-full sm:w-auto shadow-md"
             >

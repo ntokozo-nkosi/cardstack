@@ -145,9 +145,7 @@ export default function FlashcardsPage() {
             <p className="mt-2 text-muted-foreground max-w-sm mx-auto mb-8">
               You don't have any flashcards. Create some cards in your decks to see them here.
             </p>
-            <Button asChild>
-              <Link href="/decks">Browse Decks</Link>
-            </Button>
+
           </div>
         ) : (
           <div className="border rounded-lg overflow-hidden">
