@@ -146,7 +146,7 @@ export default function CollectionsPage() {
                                         href={`/collections/${collection.id}`}
                                         className="group/link flex items-center gap-2 font-semibold text-xl leading-tight hover:underline decoration-2 underline-offset-4 line-clamp-1"
                                     >
-                                        <Folder className="h-5 w-5 text-blue-500 transition-colors group-hover/link:text-blue-600" />
+                                        <Folder className="h-5 w-5 text-primary transition-colors group-hover/link:text-primary/90" />
                                         {collection.name}
                                     </Link>
                                 </div>
