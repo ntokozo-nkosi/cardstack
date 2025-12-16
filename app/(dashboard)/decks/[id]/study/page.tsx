@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Flashcard } from '@/components/flashcard'
 import { AnimatePresence, motion } from 'framer-motion'
+import { ModeToggle } from '@/components/mode-toggle'
 
 interface Card {
   id: string
@@ -240,7 +241,9 @@ export default function StudyModePage() {
           <Progress value={progress} className="h-2" />
         </div>
 
-        <div className="hidden sm:block w-[100px]" /> {/* Spacer for balance */}
+        <div className="hidden sm:flex w-[100px] justify-end">
+          <ModeToggle />
+        </div>
       </header>
 
       {/* Main Card Area */}

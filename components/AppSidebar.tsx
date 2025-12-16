@@ -16,6 +16,7 @@ import {
 
 import { UserButton, useUser } from "@clerk/nextjs";
 import { SidebarFooter } from "@/components/ui/sidebar";
+import { ModeToggle } from "@/components/mode-toggle";
 
 
 
@@ -84,22 +85,27 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="border-t border-sidebar-border bg-sidebar p-4 group-data-[collapsible=icon]:p-2">
-          <div className="flex items-center gap-2">
-            <UserButton
-              afterSignOutUrl="/"
-              appearance={{
-                elements: {
-                  avatarBox: "h-8 w-8"
-                }
-              }}
-            />
-            <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
-              <span className="text-sm font-medium truncate">
-                {isLoaded ? (user?.fullName || user?.username || "User") : "Loading..."}
-              </span>
-              <span className="text-xs text-muted-foreground truncate">
-                {isLoaded ? (user?.primaryEmailAddress?.emailAddress) : ""}
-              </span>
+          <div className="flex items-center gap-2 justify-between group-data-[collapsible=icon]:justify-center">
+            <div className="flex items-center gap-2 min-w-0">
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: "h-8 w-8"
+                  }
+                }}
+              />
+              <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
+                <span className="text-sm font-medium truncate">
+                  {isLoaded ? (user?.fullName || user?.username || "User") : "Loading..."}
+                </span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {isLoaded ? (user?.primaryEmailAddress?.emailAddress) : ""}
+                </span>
+              </div>
+            </div>
+            <div className="group-data-[collapsible=icon]:hidden shrink-0">
+              <ModeToggle />
             </div>
           </div>
         </SidebarFooter>
