@@ -199,14 +199,14 @@ export default function StudyModePage() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-sm mx-auto">
-            <Button asChild variant="outline" size="lg" className="flex-1">
+          <div className="grid grid-cols-2 gap-4 w-full max-w-sm mx-auto">
+            <Button asChild variant="outline" size="lg" className="w-full">
               <Link href={`/decks/${id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Return to Deck
               </Link>
             </Button>
-            <Button size="lg" className="flex-1 shadow-md" onClick={() => {
+            <Button size="lg" className="w-full shadow-md" onClick={() => {
               setQueue(shuffleArray(deck.cards))
               setCompletedCount(0)
             }}>
