@@ -54,7 +54,7 @@ export default function DeckDetailPage() {
       const response = await fetch(`/api/decks/${id}`)
       if (!response.ok) {
         if (response.status === 404) {
-          router.push('/')
+          router.push('/decks')
           return
         }
         throw new Error('Failed to fetch deck')
@@ -178,7 +178,7 @@ export default function DeckDetailPage() {
       if (!response.ok) throw new Error('Failed to delete deck')
 
       toast.success('Deck deleted')
-      router.push('/')
+      router.push('/decks')
     } catch (error) {
       console.error('Error deleting deck:', error)
       toast.error('Failed to delete deck')
@@ -220,7 +220,7 @@ export default function DeckDetailPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
-        href="/"
+        href="/decks"
         className="group mb-6 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />

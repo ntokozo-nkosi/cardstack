@@ -183,14 +183,13 @@ export default function FlashcardsPage() {
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <span className="cursor-pointer hover:bg-muted/50 p-1 rounded block truncate">
+                                  <span className="cursor-pointer hover:bg-muted/50 p-1 rounded block truncate transition-colors">
                                     {displayText}
                                   </span>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-80">
-                                  <div className="space-y-2">
-                                    <h4 className="font-medium">Card Content</h4>
-                                    <p className="text-sm text-muted-foreground">
+                                <PopoverContent className="w-80 p-0 overflow-hidden" align="start">
+                                  <div className="border-l-2 border-l-primary bg-card p-4">
+                                    <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
                                       {fullText}
                                     </p>
                                   </div>
