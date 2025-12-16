@@ -77,38 +77,42 @@ export default function FlashcardsPage() {
     }
   };
 
-interface TruncationResult {
-  truncated: boolean;
-  displayText: string;
-  fullText?: string;
-}
-
-const truncateText = (text: string, maxLength: number = 100): TruncationResult => {
-  if (text.length <= maxLength) {
-    return { truncated: false, displayText: text };
+  interface TruncationResult {
+    truncated: boolean;
+    displayText: string;
+    fullText?: string;
   }
-  return { 
-    truncated: true, 
-    displayText: text.substring(0, maxLength) + '...',
-    fullText: text
+
+  const truncateText = (text: string, maxLength: number = 100): TruncationResult => {
+    if (text.length <= maxLength) {
+      return { truncated: false, displayText: text };
+    }
+    return {
+      truncated: true,
+      displayText: text.substring(0, maxLength) + '...',
+      fullText: text
+    };
   };
-};
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-64" />
-          <div className="border rounded-lg">
-            <div className="p-4 space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex space-x-4">
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-6 w-96" />
-                  <Skeleton className="h-6 w-20" />
-                </div>
-              ))}
-            </div>
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="border rounded-lg">
+          <div className="p-4 space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex space-x-4">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-6 w-96" />
+                <Skeleton className="h-6 w-20" />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -116,15 +120,21 @@ const truncateText = (text: string, maxLength: number = 100): TruncationResult =
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">All Flashcards</h1>
-          <Button onClick={() => setCreatingCard(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Card
-          </Button>
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">All Flashcards</h1>
+          <p className="mt-2 text-muted-foreground">
+            Browse and manage all your flashcards across decks
+          </p>
         </div>
+        <Button onClick={() => setCreatingCard(true)} size="lg" className="shrink-0 shadow-sm">
+          <Plus className="mr-2 h-5 w-5" />
+          New Card
+        </Button>
+      </div>
+
+      <div className="space-y-6">
 
         {flashcards.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-24 text-center animate-in fade-in-50">
@@ -140,82 +150,84 @@ const truncateText = (text: string, maxLength: number = 100): TruncationResult =
             </Button>
           </div>
         ) : (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Deck</TableHead>
-                  <TableHead>Front Content</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {flashcards.map((card) => (
-                  <TableRow key={card.id}>
-                    <TableCell>
-                      <Link
-                        href={`/decks/${card.deckId}`}
-                        className="text-primary hover:underline font-medium"
-                      >
-                        {card.deckName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      {(() => {
-                        const truncationResult = truncateText(card.front);
-                        const isTruncated = truncationResult.truncated;
-                        const displayText = truncationResult.displayText;
-                        const fullText = truncationResult.fullText || displayText;
-
-                        if (isTruncated) {
-                          return (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <span className="cursor-pointer hover:bg-muted/50 p-1 rounded">
-                                  {displayText}
-                                </span>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80">
-                                <div className="space-y-2">
-                                  <h4 className="font-medium">Card Content</h4>
-                                  <p className="text-sm text-muted-foreground">
-                                    {fullText}
-                                  </p>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        } else {
-                          return <span>{displayText}</span>;
-                        }
-                      })()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(card.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingCard(card)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeletingCard(card)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Deck</TableHead>
+                    <TableHead>Front Content</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="sticky right-0 w-[100px] bg-background border-l border-border"><span className="sr-only">Actions</span></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {flashcards.map((card) => (
+                    <TableRow key={card.id} className="group">
+                      <TableCell className="font-medium whitespace-nowrap">
+                        <Link
+                          href={`/decks/${card.deckId}`}
+                          className="text-primary hover:underline"
+                        >
+                          {card.deckName}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="max-w-[300px]">
+                        {(() => {
+                          const truncationResult = truncateText(card.front);
+                          const isTruncated = truncationResult.truncated;
+                          const displayText = truncationResult.displayText;
+                          const fullText = truncationResult.fullText || displayText;
+
+                          if (isTruncated) {
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <span className="cursor-pointer hover:bg-muted/50 p-1 rounded block truncate">
+                                    {displayText}
+                                  </span>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80">
+                                  <div className="space-y-2">
+                                    <h4 className="font-medium">Card Content</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      {fullText}
+                                    </p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          } else {
+                            return <span className="block truncate">{displayText}</span>;
+                          }
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        {new Date(card.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="sticky right-0 w-[100px] bg-background group-hover:bg-muted/50 transition-colors border-l border-border">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingCard(card)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeletingCard(card)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
 
