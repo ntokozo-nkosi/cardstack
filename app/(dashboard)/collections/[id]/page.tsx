@@ -257,10 +257,6 @@ export default function CollectionDetailsPage() {
                     <p className="mt-2 text-muted-foreground max-w-sm mx-auto mb-8">
                         Add existing decks to this collection to organize your study materials.
                     </p>
-                    <Button onClick={() => setAddDeckDialogOpen(true)} size="lg" variant="outline">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Existing Deck
-                    </Button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
