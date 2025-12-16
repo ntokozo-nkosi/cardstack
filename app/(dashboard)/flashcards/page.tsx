@@ -21,7 +21,8 @@ import {
 import { EditCardDialog } from '@/components/edit-card-dialog';
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
 import { CreateCardDialog } from '@/components/create-card-dialog';
-import { Plus, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
+import { ImportCardsDialog } from '@/components/import-cards-dialog';
+import { Plus, MoreHorizontal, Edit2, Trash2, Upload } from 'lucide-react';
 
 interface Flashcard {
   id: string;
@@ -38,6 +39,7 @@ export default function FlashcardsPage() {
   const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
   const [deletingCard, setDeletingCard] = useState<Flashcard | null>(null);
   const [creatingCard, setCreatingCard] = useState(false);
+  const [importingCards, setImportingCards] = useState(false);
 
   const fetchFlashcards = async () => {
     try {
@@ -128,10 +130,16 @@ export default function FlashcardsPage() {
             Browse and manage all your flashcards across decks
           </p>
         </div>
-        <Button onClick={() => setCreatingCard(true)} size="lg" className="shrink-0 shadow-sm">
-          <Plus className="mr-2 h-5 w-5" />
-          New Card
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setImportingCards(true)} size="lg" variant="outline" className="shrink-0 shadow-sm">
+            <Upload className="mr-2 h-5 w-5" />
+            Import
+          </Button>
+          <Button onClick={() => setCreatingCard(true)} size="lg" className="shrink-0 shadow-sm">
+            <Plus className="mr-2 h-5 w-5" />
+            New Card
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -271,6 +279,13 @@ export default function FlashcardsPage() {
             setCreatingCard(false);
             fetchFlashcards();
           }}
+        />
+
+        {/* Import Cards Dialog */}
+        <ImportCardsDialog
+          open={importingCards}
+          onOpenChange={setImportingCards}
+          onSuccess={fetchFlashcards}
         />
       </div>
     </div>

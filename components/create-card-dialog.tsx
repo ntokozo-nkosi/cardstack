@@ -213,7 +213,7 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
               variant="secondary"
               disabled={loading || !front.trim() || !back.trim() ||
                 front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT ||
-                (!initialDeckId && !selectedDeckId) || decks.length === 0}
+                (!initialDeckId && !selectedDeckId)}
               onClick={() => {
                 if (!front.trim() || !back.trim()) return;
                 if (!initialDeckId && !selectedDeckId) return;
@@ -228,7 +228,7 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
               type="submit"
               disabled={loading || !front.trim() || !back.trim() ||
                 front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT ||
-                (!initialDeckId && !selectedDeckId) || decks.length === 0}
+                (!initialDeckId && !selectedDeckId)}
               className="w-full sm:w-auto shadow-md"
             >
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

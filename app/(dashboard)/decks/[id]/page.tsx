@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal } from 'lucide-react'
+import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CreateCardDialog } from '@/components/create-card-dialog'
 import { EditCardDialog } from '@/components/edit-card-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { AddToCollectionDialog } from '@/components/add-to-collection-dialog'
+import { ImportCardsDialog } from '@/components/import-cards-dialog'
 import { toast } from 'sonner'
 import {
   DropdownMenu,
@@ -43,6 +44,7 @@ export default function DeckDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteDeckDialogOpen, setDeleteDeckDialogOpen] = useState(false)
   const [addToCollectionDialogOpen, setAddToCollectionDialogOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editedTitle, setEditedTitle] = useState('')
@@ -296,6 +298,10 @@ export default function DeckDetailPage() {
                     <FolderPlus className="mr-2 h-4 w-4" />
                     Add to Collection
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import Cards
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setDeleteDeckDialogOpen(true)} className="text-destructive focus:text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Deck
@@ -389,6 +395,13 @@ export default function DeckDetailPage() {
         onOpenChange={setAddToCollectionDialogOpen}
         deckId={id}
         onSuccess={() => toast.success('Added to collection')}
+      />
+
+      <ImportCardsDialog
+        deckId={id}
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onSuccess={fetchDeck}
       />
 
       <DeleteConfirmDialog
