@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Layers, FolderOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, FolderOpen, SquareStack } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -27,6 +27,7 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   const isDecksActive = pathname?.startsWith('/decks') || pathname === '/' || false;
+  const isFlashcardsActive = pathname?.startsWith('/flashcards') || false;
 
   return (
     <>
@@ -45,6 +46,17 @@ export function AppSidebar() {
           <SidebarGroup className="px-3 py-4 group-data-[collapsible=icon]:px-2">
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => router.push('/flashcards')}
+                    isActive={isFlashcardsActive}
+                    className="w-full px-3 py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-primary rounded-lg transition-colors"
+                    tooltip="Flashcards"
+                  >
+                    <SquareStack size={16} className="shrink-0" />
+                    <span className="text-sm group-data-[collapsible=icon]:hidden">Flashcards</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => router.push('/decks')}
