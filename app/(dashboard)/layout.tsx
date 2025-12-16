@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
-import { AuthHeader } from "@/components/AuthHeader";
+
 
 export default function DashboardLayout({
     children,
@@ -23,7 +23,6 @@ export default function DashboardLayout({
         <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-                <AuthHeader />
                 <MobileHeader />
                 <div className="flex-1 overflow-auto">
                     {children}
