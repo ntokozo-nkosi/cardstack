@@ -182,30 +182,30 @@ export default function StudyModePage() {
   // Completion state
   if (queue.length === 0 && deck && deck.cards.length > 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center max-w-md w-full space-y-8 animate-in zoom-in-95 duration-300">
-          <div className="relative mx-auto w-24 h-24">
-            <div className="absolute inset-0 bg-yellow-100 rounded-full animate-pulse" />
-            <div className="relative flex items-center justify-center w-full h-full bg-yellow-50 rounded-full border-4 border-yellow-100">
-              <Trophy className="w-10 h-10 text-yellow-600" />
+      <div className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-full text-center">
+          <div className="relative mb-8 mx-auto w-24 h-24">
+            <div className="absolute inset-0 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-full animate-pulse blur-xl" />
+            <div className="relative flex items-center justify-center w-full h-full bg-background rounded-full border-4 border-yellow-100 dark:border-yellow-900/30 shadow-inner">
+              <Trophy className="w-10 h-10 text-yellow-600 dark:text-yellow-500" />
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3 mb-10">
             <h2 className="text-3xl font-bold tracking-tight">Session Complete!</h2>
-            <p className="text-muted-foreground">
-              You&apos;ve reviewed all {deck.cards.length} cards in this deck.
+            <p className="text-muted-foreground text-lg max-w-lg mx-auto">
+              You&apos;ve successfully reviewed all <span className="font-semibold text-foreground">{deck.cards.length}</span> cards.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <Button asChild variant="outline" size="lg">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-sm mx-auto">
+            <Button asChild variant="outline" size="lg" className="flex-1">
               <Link href={`/decks/${id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Return to Deck
               </Link>
             </Button>
-            <Button size="lg" onClick={() => {
+            <Button size="lg" className="flex-1 shadow-md" onClick={() => {
               setQueue(shuffleArray(deck.cards))
               setCompletedCount(0)
             }}>
@@ -221,30 +221,30 @@ export default function StudyModePage() {
   const currentCard = queue[0]
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col h-[calc(100vh-6rem)]">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <Link
           href={`/decks/${id}`}
-          className="text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2 rounded-full hover:bg-muted"
-          aria-label="Exit study mode"
+          className="group inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
-          <X className="h-5 w-5" />
+          <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+          Back to Deck
         </Link>
 
-        <div className="flex-1 max-w-sm mx-4">
-          <div className="flex justify-between text-xs font-medium text-muted-foreground mb-1.5">
+        <div className="flex-1 max-w-xs sm:mx-8 w-full">
+          <div className="flex justify-between text-xs font-medium text-muted-foreground mb-2">
             <span>Progress</span>
-            <span>{completedCount} / {deck?.cards.length}</span>
+            <span>{completedCount} of {deck?.cards.length}</span>
           </div>
-          <Progress value={progress} className="h-1.5" />
+          <Progress value={progress} className="h-2" />
         </div>
 
-        <div className="w-9" /> {/* Spacer for centering if needed, or help button */}
+        <div className="hidden sm:block w-[100px]" /> {/* Spacer for balance */}
       </header>
 
       {/* Main Card Area */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 overflow-hidden relative">
+      <main className="flex-1 flex flex-col items-center justify-center w-full relative min-h-[400px]">
         <div className="w-full max-w-2xl aspect-[3/2] relative perspective-1000">
           <AnimatePresence mode="popLayout" custom={direction}>
             {currentCard && (
@@ -275,17 +275,27 @@ export default function StudyModePage() {
         </div>
 
         {/* Keyboard Hints */}
-        <div className="hidden lg:flex items-center gap-6 mt-8 text-xs text-muted-foreground font-medium opacity-50">
-          <span className="flex items-center gap-1.5"><Keyboard className="w-3 h-3" /> Shortcuts</span>
-          <span className="flex items-center gap-1"><kbd className="bg-muted px-1.5 py-0.5 rounded border border-border">Space</kbd> Flip</span>
-          <span className="flex items-center gap-1"><kbd className="bg-muted px-1.5 py-0.5 rounded border border-border">1</kbd> Wrong</span>
-          <span className="flex items-center gap-1"><kbd className="bg-muted px-1.5 py-0.5 rounded border border-border">2</kbd> Right</span>
+        <div className="hidden lg:flex items-center gap-8 mt-12 text-xs font-medium text-muted-foreground/60">
+          <div className="flex items-center gap-2">
+            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">Space</kbd>
+            <span>Flip Card</span>
+          </div>
+          <div className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-2">
+            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">1</kbd>
+            <span>Got it wrong</span>
+          </div>
+          <div className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-2">
+            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">2</kbd>
+            <span>Got it right</span>
+          </div>
         </div>
       </main>
 
       {/* Footer / Controls */}
-      <footer className="p-6 md:p-8 bg-background/80 backdrop-blur-sm border-t">
-        <div className="max-w-2xl mx-auto flex items-center justify-center gap-4 transition-all duration-300"
+      <footer className="mt-8 mb-4">
+        <div className="max-w-xl mx-auto flex items-center justify-center gap-4 transition-all duration-300"
           style={{
             opacity: isFlipped ? 1 : 0.5,
             pointerEvents: isFlipped ? 'auto' : 'none',
@@ -296,18 +306,18 @@ export default function StudyModePage() {
             variant="outline"
             size="lg"
             onClick={handleIncorrect}
-            className="flex-1 h-14 text-base font-medium border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 hover:border-red-300 dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/50"
+            className="flex-1 h-12 text-base border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive active:scale-95 transition-all"
           >
-            <X className="mr-2 h-5 w-5" />
+            <X className="mr-2 h-4 w-4" />
             Got it wrong
           </Button>
 
           <Button
             size="lg"
             onClick={handleCorrect}
-            className="flex-1 h-14 text-base font-medium bg-emerald-600 hover:bg-emerald-700 text-white border-transparent shadow-md hover:shadow-lg transition-all"
+            className="flex-1 h-12 text-base active:scale-95 transition-all shadow-sm"
           >
-            <Check className="mr-2 h-5 w-5" />
+            <Check className="mr-2 h-4 w-4" />
             Got it right
           </Button>
         </div>
