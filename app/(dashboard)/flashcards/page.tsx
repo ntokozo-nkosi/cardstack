@@ -243,15 +243,25 @@ export default function FlashcardsPage() {
             <p className="text-sm font-medium">
               {selectedCards.size} card{selectedCards.size !== 1 ? 's' : ''} selected
             </p>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setBulkDeleting(true)}
-              disabled={isDeleting}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Selected
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedCards(new Set())}
+                disabled={isDeleting}
+              >
+                Deselect All
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setBulkDeleting(true)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Selected
+              </Button>
+            </div>
           </div>
         )}
 
