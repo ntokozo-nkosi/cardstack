@@ -85,7 +85,7 @@ export default function FlashcardsPage() {
     fullText?: string;
   }
 
-  const truncateText = (text: string, maxLength: number = 100): TruncationResult => {
+  const truncateText = (text: string, maxLength: number = 50): TruncationResult => {
     if (text.length <= maxLength) {
       return { truncated: false, displayText: text };
     }
@@ -189,9 +189,9 @@ export default function FlashcardsPage() {
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <span className="cursor-pointer hover:bg-muted/50 p-1 rounded block truncate transition-colors">
+                                  <button type="button" className="text-left w-full cursor-pointer hover:bg-muted/50 p-1 rounded block truncate transition-colors outline-none">
                                     {displayText}
-                                  </span>
+                                  </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-80 p-0 overflow-hidden" align="start">
                                   <div className="border-l-2 border-l-primary bg-card p-4">

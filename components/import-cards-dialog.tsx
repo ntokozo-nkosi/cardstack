@@ -20,7 +20,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Upload, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { Loader2, Upload, AlertCircle, CheckCircle2, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import Papa from 'papaparse'
 
@@ -43,6 +45,8 @@ export function ImportCardsDialog({
     onSuccess,
 }: ImportCardsDialogProps) {
     const [file, setFile] = useState<File | null>(null)
+    const [csvText, setCsvText] = useState('')
+    const [activeTab, setActiveTab] = useState('file')
     const [parsedCards, setParsedCards] = useState<ParsedCard[]>([])
     const [isParsing, setIsParsing] = useState(false)
     const [isImporting, setIsImporting] = useState(false)
@@ -82,10 +86,12 @@ export function ImportCardsDialog({
 
     const resetState = () => {
         setFile(null)
+        setCsvText('')
         setParsedCards([])
         setError(null)
         setIsParsing(false)
         setIsImporting(false)
+        setActiveTab('file')
         if (!initialDeckId) setSelectedDeckId('')
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
@@ -97,6 +103,19 @@ export function ImportCardsDialog({
             resetState()
         }
         onOpenChange(newOpen)
+    }
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value)
+        setError(null)
+        setParsedCards([]) // Clear parsed cards when switching tabs to avoid confusion
+
+        // Don't clear inputs, so user can switch back
+        if (value === 'file' && file) {
+            parseCSV(file)
+        } else if (value === 'text' && csvText) {
+            parseText(csvText)
+        }
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,58 +132,88 @@ export function ImportCardsDialog({
         parseCSV(selectedFile)
     }
 
+    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const text = e.target.value
+        setCsvText(text)
+        if (text.trim()) {
+            setError(null)
+            parseText(text)
+        } else {
+            setParsedCards([])
+        }
+    }
+
+    const processParseResults = (results: Papa.ParseResult<any>) => {
+        setIsParsing(false)
+
+        if (results.errors.length > 0) {
+            console.error('CSV Parsing errors:', results.errors)
+            // Only show error if it's a critical failure, some CSVs have minor warnings
+            if (results.data.length === 0) {
+                setError('Failed to parse CSV data. Please check the format.')
+                return
+            }
+        }
+
+        const data = results.data as any[]
+        if (data.length === 0) {
+            setError('The CSV data is empty.')
+            return
+        }
+
+        const fields = results.meta.fields || []
+        const frontField = fields.find(f => f.toLowerCase() === 'front') || fields[0]
+        const backField = fields.find(f => f.toLowerCase() === 'back') || fields[1]
+
+        if (!frontField || !backField) {
+            setError('Could not identify "front" and "back" columns. Please ensure headers are present.')
+            return;
+        }
+
+        const validCards: ParsedCard[] = data
+            .map((row) => ({
+                front: row[frontField]?.trim(),
+                back: row[backField]?.trim(),
+            }))
+            .filter((card) => card.front && card.back)
+
+        if (validCards.length === 0) {
+            setError('No valid cards found. Ensure columns are not empty.')
+            return
+        }
+
+        if (validCards.length > 250) {
+            setError('Import limit exceeded. You can only import up to 250 cards at a time.')
+            return
+        }
+
+        setParsedCards(validCards)
+    }
+
     const parseCSV = (file: File) => {
         setIsParsing(true)
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
-            complete: (results) => {
-                setIsParsing(false)
-
-                if (results.errors.length > 0) {
-                    console.error('CSV Parsing errors:', results.errors)
-                    setError('Failed to parse CSV file. Please check the format.')
-                    return
-                }
-
-                const data = results.data as any[]
-                if (data.length === 0) {
-                    setError('The CSV file is empty.')
-                    return
-                }
-
-                const fields = results.meta.fields || []
-                const frontField = fields.find(f => f.toLowerCase() === 'front') || fields[0]
-                const backField = fields.find(f => f.toLowerCase() === 'back') || fields[1]
-
-                if (!frontField || !backField) {
-                    setError('Could not identify "front" and "back" columns. Please ensure your CSV has headers or use the standard format.')
-                    return;
-                }
-
-                const validCards: ParsedCard[] = data
-                    .map((row) => ({
-                        front: row[frontField]?.trim(),
-                        back: row[backField]?.trim(),
-                    }))
-                    .filter((card) => card.front && card.back)
-
-                if (validCards.length === 0) {
-                    setError('No valid cards found in the CSV. Ensure columns are not empty.')
-                    return
-                }
-
-                if (validCards.length > 250) {
-                    setError('Import limit exceeded. You can only import up to 250 cards at a time.')
-                    return
-                }
-
-                setParsedCards(validCards)
-            },
+            complete: processParseResults,
             error: (error) => {
                 setIsParsing(false)
                 console.error('CSV Parse Error:', error)
                 setError('An error occurred while reading the file.')
+            }
+        })
+    }
+
+    const parseText = (text: string) => {
+        setIsParsing(true)
+        Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: processParseResults,
+            error: (error: Error) => {
+                setIsParsing(false)
+                console.error('CSV Text Parse Error:', error)
+                setError('An error occurred while parsing the text.')
             }
         })
     }
@@ -201,17 +250,17 @@ export function ImportCardsDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[600px] h-[80vh] sm:h-[600px] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Import Cards</DialogTitle>
                     <DialogDescription>
                         {initialDeckId
-                            ? 'Upload a CSV file to bulk import flashcards. The file should have headers for "front" and "back".'
-                            : 'Select a deck and upload a CSV file to bulk import flashcards.'}
+                            ? 'Import flashcards from a CSV file or text. Headers "front" and "back" are required.'
+                            : 'Select a deck and import flashcards from a CSV file or text.'}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="grid gap-4 py-4">
+                <div className="flex-1 overflow-y-auto py-4 space-y-4">
                     {!initialDeckId && (
                         <div className="space-y-2">
                             <Label>Select Deck</Label>
@@ -242,47 +291,70 @@ export function ImportCardsDialog({
                         </div>
                     )}
 
-                    <div className="flex flex-col gap-2">
-                        {!file ? (
-                            <div
-                                className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors ${!initialDeckId && !selectedDeckId ? 'opacity-50 pointer-events-none' : ''}`}
-                                onClick={() => {
-                                    if (initialDeckId || selectedDeckId) {
-                                        fileInputRef.current?.click()
-                                    }
-                                }}
-                            >
-                                <Upload className="h-8 w-8 text-muted-foreground mb-4" />
-                                <p className="text-sm font-medium">Click to upload CSV</p>
-                                <p className="text-xs text-muted-foreground mt-1">or drag and drop here</p>
-                            </div>
-                        ) : (
-                            <div className="border rounded-lg p-4 flex items-center justify-between bg-muted/20">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                        <Upload className="h-5 w-5 text-primary" />
+                    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                            <TabsTrigger value="file">Upload File</TabsTrigger>
+                            <TabsTrigger value="text">Paste Text</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="file" className="space-y-4">
+                            <div className="flex flex-col gap-2">
+                                {!file ? (
+                                    <div
+                                        className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors ${!initialDeckId && !selectedDeckId ? 'opacity-50 pointer-events-none' : ''}`}
+                                        onClick={() => {
+                                            if (initialDeckId || selectedDeckId) {
+                                                fileInputRef.current?.click()
+                                            }
+                                        }}
+                                    >
+                                        <Upload className="h-8 w-8 text-muted-foreground mb-4" />
+                                        <div className="text-sm font-medium">Click to upload CSV</div>
+                                        <div className="text-xs text-muted-foreground mt-1">or drag and drop here</div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
-                                        <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
+                                ) : (
+                                    <div className="border rounded-lg p-4 flex items-center justify-between bg-muted/20">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <FileText className="h-5 w-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
+                                                <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
+                                            </div>
+                                        </div>
+                                        <Button variant="ghost" size="sm" onClick={() => { setFile(null); setParsedCards([]); }}>Change</Button>
                                     </div>
-                                </div>
-                                <Button variant="ghost" size="sm" onClick={resetState}>Change</Button>
+                                )}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".csv"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
                             </div>
-                        )}
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".csv"
-                            className="hidden"
-                            onChange={handleFileChange}
-                        />
-                    </div>
+                        </TabsContent>
+
+                        <TabsContent value="text" className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="csv-input" className="sr-only">CSV Content</Label>
+                                <Textarea
+                                    id="csv-input"
+                                    placeholder={`front,back\n"Question 1","Answer 1"\n"Question 2","Answer 2"`}
+                                    className="font-mono text-xs min-h-[200px]"
+                                    value={csvText}
+                                    onChange={handleTextChange}
+                                    disabled={!initialDeckId && !selectedDeckId}
+                                />
+                            </div>
+                        </TabsContent>
+                    </Tabs>
 
                     {isParsing && (
-                        <div className="flex items-center justify-center py-4 text-muted-foreground">
+                        <div className="flex items-center justify-center py-2 text-muted-foreground text-sm">
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Parsing CSV...
+                            Parsing...
                         </div>
                     )}
 
@@ -294,35 +366,35 @@ export function ImportCardsDialog({
                     )}
 
                     {parsedCards.length > 0 && !error && (
-                        <div className="rounded-md bg-green-500/10 p-3 flex items-start gap-2 text-sm text-green-600 dark:text-green-400">
-                            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
-                            <p>Ready to import <strong>{parsedCards.length}</strong> cards.</p>
-                        </div>
-                    )}
+                        <div className="space-y-3">
+                            <div className="rounded-md bg-green-500/10 p-3 flex items-start gap-2 text-sm text-green-600 dark:text-green-400">
+                                <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                                <p>Ready to import <strong>{parsedCards.length}</strong> cards.</p>
+                            </div>
 
-                    {parsedCards.length > 0 && (
-                        <div className="max-h-[200px] overflow-y-auto border rounded-md text-xs">
-                            <table className="w-full">
-                                <thead className="bg-muted sticky top-0">
-                                    <tr>
-                                        <th className="p-2 text-left font-medium">Front</th>
-                                        <th className="p-2 text-left font-medium">Back</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {parsedCards.slice(0, 5).map((card, i) => (
-                                        <tr key={i} className="border-t">
-                                            <td className="p-2 truncate max-w-[150px]">{card.front}</td>
-                                            <td className="p-2 truncate max-w-[150px]">{card.back}</td>
+                            <div className="max-h-[150px] overflow-y-auto border rounded-md text-xs">
+                                <table className="w-full">
+                                    <thead className="bg-muted sticky top-0">
+                                        <tr>
+                                            <th className="p-2 text-left font-medium">Front</th>
+                                            <th className="p-2 text-left font-medium">Back</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {parsedCards.length > 5 && (
-                                <div className="p-2 text-center text-muted-foreground bg-muted/5 border-t">
-                                    ...and {parsedCards.length - 5} more
-                                </div>
-                            )}
+                                    </thead>
+                                    <tbody>
+                                        {parsedCards.slice(0, 5).map((card, i) => (
+                                            <tr key={i} className="border-t">
+                                                <td className="p-2 truncate max-w-[150px]">{card.front}</td>
+                                                <td className="p-2 truncate max-w-[150px]">{card.back}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {parsedCards.length > 5 && (
+                                    <div className="p-2 text-center text-muted-foreground bg-muted/5 border-t">
+                                        ...and {parsedCards.length - 5} more
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
