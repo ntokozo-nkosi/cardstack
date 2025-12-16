@@ -14,10 +14,16 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+import { UserButton, useUser } from "@clerk/nextjs";
+import { SidebarFooter } from "@/components/ui/sidebar";
+
+
+
 export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { toggleSidebar, state } = useSidebar();
+  const { user, isLoaded } = useUser();
   const isCollapsed = state === "collapsed";
 
   const isDecksActive = pathname?.startsWith('/decks') || pathname === '/' || false;
@@ -26,6 +32,7 @@ export function AppSidebar() {
     <>
       <Sidebar className="border-r border-sidebar-border" collapsible="icon">
         <SidebarHeader className="border-b border-sidebar-border bg-sidebar p-4 group-data-[collapsible=icon]:p-2">
+          {/* ... existing header content ... */}
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold shrink-0">
               C
@@ -34,6 +41,7 @@ export function AppSidebar() {
           </div>
         </SidebarHeader>
         <SidebarContent className="bg-sidebar">
+          {/* ... existing content ... */}
           <SidebarGroup className="px-3 py-4 group-data-[collapsible=icon]:px-2">
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
@@ -63,6 +71,26 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
+        <SidebarFooter className="border-t border-sidebar-border bg-sidebar p-4 group-data-[collapsible=icon]:p-2">
+          <div className="flex items-center gap-2">
+            <UserButton
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  avatarBox: "h-8 w-8"
+                }
+              }}
+            />
+            <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
+              <span className="text-sm font-medium truncate">
+                {isLoaded ? (user?.fullName || user?.username || "User") : "Loading..."}
+              </span>
+              <span className="text-xs text-muted-foreground truncate">
+                {isLoaded ? (user?.primaryEmailAddress?.emailAddress) : ""}
+              </span>
+            </div>
+          </div>
+        </SidebarFooter>
       </Sidebar>
 
       {/* Fixed floating toggle button in the middle - hidden on mobile */}
