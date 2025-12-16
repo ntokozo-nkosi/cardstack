@@ -1,8 +1,11 @@
-.PHONY: dev migration migrate rollback reset
+.PHONY: dev build migration migrate rollback reset
 
 # Development
 dev:
 	doppler run -- npm run dev
+
+build:
+	doppler run -- npm run build
 
 # Database migrations (uses DATABASE_URL_UNPOOLED for direct connection to avoid pooler issues)
 migration:
