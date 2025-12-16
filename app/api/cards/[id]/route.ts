@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/database'
+import { getCurrentUserDb } from '@/lib/auth-helpers'
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUserDb()
+    if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
     const { id } = await params
     const body = await request.json()
     const { front, back } = body
@@ -25,20 +31,25 @@ export async function PUT(
     }
 
     const result = await query(
-      `UPDATE cards SET front = $1, back = $2 
-       WHERE id = $3 
-       RETURNING id, deck_id as "deckId", front, back, created_at as "createdAt"`,
-      [front.trim(), back.trim(), id]
+      'SELECT * FROM update_card_if_owned($1, $2, $3, $4)',
+      [id, user.id, front.trim(), back.trim()]
     )
 
     if (result.rows.length === 0) {
       return NextResponse.json(
-        { error: 'Card not found' },
+        { error: 'Card not found or unauthorized' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(result.rows[0])
+    const card = result.rows[0]
+    return NextResponse.json({
+      id: card.id,
+      deckId: card.deck_id,
+      front: card.front,
+      back: card.back,
+      createdAt: card.created_at
+    })
   } catch (error) {
     console.error('Failed to update card:', error)
     return NextResponse.json(
@@ -53,9 +64,24 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUserDb()
+    if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
     const { id } = await params
 
-    await query('DELETE FROM cards WHERE id = $1', [id])
+    const result = await query(
+      'SELECT delete_card_if_owned($1, $2) as deleted',
+      [id, user.id]
+    )
+
+    if (!result.rows[0]?.deleted) {
+      return NextResponse.json(
+        { error: 'Card not found or unauthorized' },
+        { status: 404 }
+      )
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -66,3 +92,4 @@ export async function DELETE(
     )
   }
 }
+

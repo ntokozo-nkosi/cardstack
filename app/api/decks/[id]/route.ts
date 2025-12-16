@@ -1,36 +1,31 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/database'
+import { getCurrentUserDb } from '@/lib/auth-helpers'
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUserDb()
+    if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
     const { id } = await params
 
-    const deckResult = await query(
-      `SELECT id, name, description, created_at as "createdAt" 
-       FROM decks WHERE id = $1`,
-      [id]
+    const result = await query(
+      'SELECT get_deck_with_cards($1, $2) as deck',
+      [id, user.id]
     )
 
-    if (deckResult.rows.length === 0) {
+    const deck = result.rows[0]?.deck
+
+    if (!deck) {
       return NextResponse.json(
         { error: 'Deck not found' },
         { status: 404 }
       )
-    }
-
-    const cardsResult = await query(
-      `SELECT id, deck_id as "deckId", front, back, created_at as "createdAt" 
-       FROM cards WHERE deck_id = $1 
-       ORDER BY created_at DESC`,
-      [id]
-    )
-
-    const deck = {
-      ...deckResult.rows[0],
-      cards: cardsResult.rows
     }
 
     return NextResponse.json(deck)
@@ -48,6 +43,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUserDb()
+    if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
     const { id } = await params
     const body = await request.json()
     const { name, description } = body
@@ -61,9 +61,9 @@ export async function PUT(
 
     const result = await query(
       `UPDATE decks SET name = $1, description = $2 
-       WHERE id = $3 
+       WHERE id = $3 AND user_id = $4
        RETURNING id, name, description, created_at as "createdAt"`,
-      [name.trim(), description?.trim() || null, id]
+      [name.trim(), description?.trim() || null, id, user.id]
     )
 
     if (result.rows.length === 0) {
@@ -88,7 +88,24 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getCurrentUserDb()
+    if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
     const { id } = await params
+
+    const checkResult = await query(
+      'SELECT id FROM decks WHERE id = $1 AND user_id = $2',
+      [id, user.id]
+    )
+
+    if (checkResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Deck not found' },
+        { status: 404 }
+      )
+    }
 
     await query('DELETE FROM decks WHERE id = $1', [id])
 
