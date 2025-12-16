@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Plus, ArrowLeft, Play, X, Pencil, Loader2, Library } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
 import { AddDeckToCollectionDialog } from '@/components/add-deck-to-collection-dialog'
 import { toast } from 'sonner'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
@@ -40,6 +41,10 @@ export default function CollectionDetailsPage() {
     const [editedTitle, setEditedTitle] = useState('')
     const [isSavingTitle, setIsSavingTitle] = useState(false)
     const titleInputRef = useRef<HTMLInputElement>(null)
+    const [isEditingDescription, setIsEditingDescription] = useState(false)
+    const [editedDescription, setEditedDescription] = useState('')
+    const [isSavingDescription, setIsSavingDescription] = useState(false)
+    const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
 
     const fetchCollection = useCallback(async () => {
         try {
@@ -75,6 +80,15 @@ export default function CollectionDetailsPage() {
             input.setSelectionRange(length, length)
         }
     }, [isEditingTitle])
+
+    useEffect(() => {
+        if (isEditingDescription && descriptionTextareaRef.current) {
+            const textarea = descriptionTextareaRef.current
+            textarea.focus()
+            const length = textarea.value.length
+            textarea.setSelectionRange(length, length)
+        }
+    }, [isEditingDescription])
 
     const startEditingTitle = () => {
         if (collection) {
@@ -127,6 +141,60 @@ export default function CollectionDetailsPage() {
             saveTitle()
         } else if (e.key === 'Escape') {
             cancelEditingTitle()
+        }
+    }
+
+    const startEditingDescription = () => {
+        if (collection) {
+            setEditedDescription(collection.description || '')
+            setIsEditingDescription(true)
+        }
+    }
+
+    const cancelEditingDescription = () => {
+        setEditedDescription(collection?.description || '')
+        setIsEditingDescription(false)
+    }
+
+    const saveDescription = async () => {
+        const trimmedDescription = editedDescription.trim()
+        
+        if (trimmedDescription === (collection?.description || '')) {
+            setIsEditingDescription(false)
+            return
+        }
+
+        setIsSavingDescription(true)
+        try {
+            const response = await fetch(`/api/collections/${params.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    name: collection?.name, 
+                    description: trimmedDescription || null 
+                })
+            })
+
+            if (!response.ok) throw new Error('Failed to update collection description')
+
+            toast.success('Collection description updated')
+            await fetchCollection()
+            setIsEditingDescription(false)
+        } catch (error) {
+            console.error('Error updating collection description:', error)
+            toast.error('Failed to update collection description')
+            setEditedDescription(collection?.description || '')
+        } finally {
+            setIsSavingDescription(false)
+        }
+    }
+
+    const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            saveDescription()
+        } else if (e.key === 'Escape') {
+            cancelEditingDescription()
         }
     }
 
@@ -236,10 +304,43 @@ export default function CollectionDetailsPage() {
                             </Button>
                         </div>
                     )}
-                    {collection.description && (
-                        <p className="text-lg text-muted-foreground">
-                            {collection.description}
-                        </p>
+                    {isEditingDescription ? (
+                        <div className="relative">
+                            <Textarea
+                                ref={descriptionTextareaRef}
+                                value={editedDescription}
+                                onChange={(e) => setEditedDescription(e.target.value)}
+                                onBlur={saveDescription}
+                                onKeyDown={handleDescriptionKeyDown}
+                                disabled={isSavingDescription}
+                                placeholder="Add a description..."
+                                maxLength={100}
+                                className="min-h-[50px] resize-none border-2 border-primary text-base"
+                            />
+                            {isSavingDescription && (
+                                <div className="absolute right-2 top-2">
+                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div 
+                            className="group/desc cursor-pointer rounded-md px-2 py-1 -mx-2 hover:bg-muted/50 transition-colors"
+                            onClick={startEditingDescription}
+                        >
+                            <div className="flex items-start gap-2">
+                                <p className={collection.description ? "text-lg text-muted-foreground flex-1" : "text-lg text-muted-foreground flex-1 italic opacity-70"}>
+                                    {collection.description || "No description"}
+                                </p>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 opacity-0 transition-opacity group-hover/desc:opacity-100"
+                                >
+                                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                </Button>
+                            </div>
+                        </div>
                     )}
                 </div>
                 <Button onClick={() => setAddDeckDialogOpen(true)} size="lg" className="shrink-0 shadow-sm">

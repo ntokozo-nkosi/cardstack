@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
 import { CreateCardDialog } from '@/components/create-card-dialog'
 import { EditCardDialog } from '@/components/edit-card-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
@@ -50,6 +51,10 @@ export default function DeckDetailPage() {
   const [editedTitle, setEditedTitle] = useState('')
   const [isSavingTitle, setIsSavingTitle] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
+  const [editedDescription, setEditedDescription] = useState('')
+  const [isSavingDescription, setIsSavingDescription] = useState(false)
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -82,6 +87,15 @@ export default function DeckDetailPage() {
       input.setSelectionRange(length, length)
     }
   }, [isEditingTitle])
+
+  useEffect(() => {
+    if (isEditingDescription && descriptionTextareaRef.current) {
+      const textarea = descriptionTextareaRef.current
+      textarea.focus()
+      const length = textarea.value.length
+      textarea.setSelectionRange(length, length)
+    }
+  }, [isEditingDescription])
 
   const startEditingTitle = () => {
     if (deck) {
@@ -136,6 +150,62 @@ export default function DeckDetailPage() {
       saveTitle()
     } else if (e.key === 'Escape') {
       cancelEditingTitle()
+    }
+  }
+
+  const startEditingDescription = () => {
+    if (deck) {
+      setEditedDescription(deck.description || '')
+      setIsEditingDescription(true)
+    }
+  }
+
+  const cancelEditingDescription = () => {
+    setEditedDescription(deck?.description || '')
+    setIsEditingDescription(false)
+  }
+
+  const saveDescription = async () => {
+    const trimmedDescription = editedDescription.trim()
+    
+    if (trimmedDescription === (deck?.description || '')) {
+      setIsEditingDescription(false)
+      return
+    }
+
+    setIsSavingDescription(true)
+    try {
+      const response = await fetch(`/api/decks/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          name: deck?.name, 
+          description: trimmedDescription || null 
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to update deck description')
+
+      toast.success('Deck description updated')
+      await fetchDeck()
+      setIsEditingDescription(false)
+    } catch (error) {
+      console.error('Error updating deck description:', error)
+      toast.error('Failed to update deck description')
+      setEditedDescription(deck?.description || '')
+    } finally {
+      setIsSavingDescription(false)
+    }
+  }
+
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      saveDescription()
+    } else if (e.key === 'Escape') {
+      cancelEditingDescription()
     }
   }
 
@@ -262,8 +332,43 @@ export default function DeckDetailPage() {
             )}
 
             <div className="flex flex-col gap-1 text-muted-foreground">
-              {deck.description && (
-                <p className="text-lg">{deck.description}</p>
+              {isEditingDescription ? (
+                <div className="relative">
+                  <Textarea
+                    ref={descriptionTextareaRef}
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    onBlur={saveDescription}
+                    onKeyDown={handleDescriptionKeyDown}
+                    disabled={isSavingDescription}
+                    placeholder="Add a description..."
+                    maxLength={100}
+                    className="min-h-[50px] resize-none border-2 border-primary text-base"
+                  />
+                  {isSavingDescription && (
+                    <div className="absolute right-2 top-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div 
+                  className="group/desc cursor-pointer rounded-md px-2 py-1 -mx-2 hover:bg-muted/50 transition-colors"
+                  onClick={startEditingDescription}
+                >
+                  <div className="flex items-start gap-2">
+                    <p className={deck.description ? "text-lg flex-1" : "text-lg flex-1 italic opacity-70"}>
+                      {deck.description || "No description"}
+                    </p>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 opacity-0 transition-opacity group-hover/desc:opacity-100"
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
+                </div>
               )}
               <div className="flex items-center text-sm font-medium mt-1">
                 <Library className="mr-2 h-4 w-4" />
