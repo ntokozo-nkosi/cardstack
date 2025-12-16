@@ -1,15 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Loader2, Plus, Save } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface CreateCardDialogProps {
-  deckId: string
+  deckId?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
@@ -17,17 +24,63 @@ interface CreateCardDialogProps {
 
 const MAX_CHAR_LIMIT = 200
 
-export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: CreateCardDialogProps) {
+export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, onSuccess }: CreateCardDialogProps) {
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
   const [loading, setLoading] = useState(false)
+  const [decks, setDecks] = useState<Array<{ id: string; name: string }>>([])
+  const [selectedDeckId, setSelectedDeckId] = useState(initialDeckId || '')
+  const [loadingDecks, setLoadingDecks] = useState(false)
+
+  // Fetch decks when dialog opens and no deckId is provided
+  useEffect(() => {
+    if (open && !initialDeckId) {
+      fetchDecks()
+    }
+  }, [open, initialDeckId])
+
+  // Set selected deck when initialDeckId changes
+  useEffect(() => {
+    if (initialDeckId) {
+      setSelectedDeckId(initialDeckId)
+    }
+  }, [initialDeckId])
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setFront('')
+      setBack('')
+      if (!initialDeckId) {
+        setSelectedDeckId('')
+      }
+    }
+  }, [open, initialDeckId])
+
+  const fetchDecks = async () => {
+    setLoadingDecks(true)
+    try {
+      const response = await fetch('/api/decks')
+      if (!response.ok) {
+        throw new Error('Failed to fetch decks')
+      }
+      const data = await response.json()
+      setDecks(data)
+    } catch (error) {
+      console.error('Error fetching decks:', error)
+      toast.error('Failed to load decks')
+    } finally {
+      setLoadingDecks(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent, addAnother: boolean = false) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/decks/${deckId}/cards`, {
+      const targetDeckId = initialDeckId || selectedDeckId
+      const response = await fetch(`/api/decks/${targetDeckId}/cards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ front, back })
@@ -60,9 +113,47 @@ export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: Crea
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Create New Card</DialogTitle>
             <DialogDescription className="text-base">
-              Add a new flashcard to this deck.
+              {initialDeckId ? 'Add a new flashcard to this deck.' : 'Add a new flashcard to one of your decks.'}
             </DialogDescription>
           </DialogHeader>
+          
+          {!initialDeckId && (
+            <div className="space-y-2">
+              <Label htmlFor="deck-select" className="text-base font-semibold">Select Deck</Label>
+              {loadingDecks ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Loading decks...</span>
+                </div>
+              ) : decks.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">You don't have any decks yet.</p>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => onOpenChange(false)}
+                    className="mt-2"
+                  >
+                    Create a Deck First
+                  </Button>
+                </div>
+              ) : (
+                <Select value={selectedDeckId} onValueChange={setSelectedDeckId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a deck to add the card to" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {decks.map((deck) => (
+                      <SelectItem key={deck.id} value={deck.id}>
+                        {deck.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+          
           <div className="space-y-6 py-2">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -115,9 +206,12 @@ export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: Crea
             <Button
               type="button"
               variant="secondary"
-              disabled={loading || !front.trim() || !back.trim() || front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT}
+              disabled={loading || !front.trim() || !back.trim() || 
+                front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT || 
+                (!initialDeckId && !selectedDeckId) || decks.length === 0}
               onClick={() => {
                 if (!front.trim() || !back.trim()) return;
+                if (!initialDeckId && !selectedDeckId) return;
                 handleSubmit({ preventDefault: () => { } } as React.FormEvent, true);
               }}
               className="w-full sm:w-auto"
@@ -127,7 +221,9 @@ export function CreateCardDialog({ deckId, open, onOpenChange, onSuccess }: Crea
             </Button>
             <Button
               type="submit"
-              disabled={loading || !front.trim() || !back.trim() || front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT}
+              disabled={loading || !front.trim() || !back.trim() || 
+                front.length > MAX_CHAR_LIMIT || back.length > MAX_CHAR_LIMIT || 
+                (!initialDeckId && !selectedDeckId) || decks.length === 0}
               className="w-full sm:w-auto shadow-md"
             >
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

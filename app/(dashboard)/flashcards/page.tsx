@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/popover';
 import { EditCardDialog } from '@/components/edit-card-dialog';
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
-import { MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
+import { CreateCardDialog } from '@/components/create-card-dialog';
+import { Plus, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 
 interface Flashcard {
   id: string;
@@ -36,6 +37,7 @@ export default function FlashcardsPage() {
   const [loading, setLoading] = useState(true);
   const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
   const [deletingCard, setDeletingCard] = useState<Flashcard | null>(null);
+  const [creatingCard, setCreatingCard] = useState(false);
 
   const fetchFlashcards = async () => {
     try {
@@ -118,6 +120,10 @@ const truncateText = (text: string, maxLength: number = 100): TruncationResult =
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">All Flashcards</h1>
+          <Button onClick={() => setCreatingCard(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Card
+          </Button>
         </div>
 
         {flashcards.length === 0 ? (
@@ -245,6 +251,18 @@ const truncateText = (text: string, maxLength: number = 100): TruncationResult =
             description="Are you sure you want to delete this card? This action cannot be undone."
           />
         )}
+
+        {/* Create Card Dialog */}
+        <CreateCardDialog
+          open={creatingCard}
+          onOpenChange={(open) => {
+            setCreatingCard(open);
+          }}
+          onSuccess={() => {
+            setCreatingCard(false);
+            fetchFlashcards();
+          }}
+        />
       </div>
     </div>
   );
