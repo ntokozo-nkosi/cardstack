@@ -176,6 +176,12 @@ export function ImportCardsDialog({
                 back: row[backField]?.trim(),
             }))
             .filter((card) => card.front && card.back)
+            .filter((card) => {
+                // Skip rows that match header names
+                const isHeaderRow = card.front.toLowerCase() === frontField.toLowerCase() &&
+                    card.back.toLowerCase() === backField.toLowerCase()
+                return !isHeaderRow
+            })
 
         if (validCards.length === 0) {
             setError('No valid cards found. Ensure columns are not empty.')

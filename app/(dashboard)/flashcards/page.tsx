@@ -18,11 +18,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { EditCardDialog } from '@/components/edit-card-dialog';
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
 import { CreateCardDialog } from '@/components/create-card-dialog';
 import { ImportCardsDialog } from '@/components/import-cards-dialog';
-import { Plus, MoreHorizontal, Edit2, Trash2, Upload } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Plus, MoreHorizontal, Edit2, Trash2, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Flashcard {
   id: string;
@@ -40,6 +48,11 @@ export default function FlashcardsPage() {
   const [deletingCard, setDeletingCard] = useState<Flashcard | null>(null);
   const [creatingCard, setCreatingCard] = useState(false);
   const [importingCards, setImportingCards] = useState(false);
+  const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchFlashcards = async () => {
     try {
@@ -62,6 +75,7 @@ export default function FlashcardsPage() {
   }, []);
 
   const handleDelete = async (cardId: string) => {
+    setIsDeleting(true);
     try {
       const response = await fetch(`/api/cards/${cardId}`, {
         method: 'DELETE',
@@ -76,7 +90,88 @@ export default function FlashcardsPage() {
     } catch (error) {
       console.error('Error deleting card:', error);
       toast.error('Failed to delete card');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const cardIds = Array.from(selectedCards);
+      const response = await fetch('/api/cards/bulk', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cardIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete cards');
+      }
+
+      const { deletedCount } = await response.json();
+      setFlashcards(prev => prev.filter(card => !selectedCards.has(card.id)));
+      setSelectedCards(new Set());
+      toast.success(`${deletedCount} card${deletedCount !== 1 ? 's' : ''} deleted successfully`);
+    } catch (error) {
+      console.error('Error deleting cards:', error);
+      toast.error('Failed to delete cards');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const toggleCardSelection = (cardId: string) => {
+    setSelectedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const currentPageIds = paginatedFlashcards.map(card => card.id);
+    const allCurrentPageSelected = currentPageIds.every(id => selectedCards.has(id));
+    
+    if (allCurrentPageSelected && currentPageIds.length > 0) {
+      // Deselect all on current page
+      setSelectedCards(prev => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+    } else {
+      // Select all on current page
+      setSelectedCards(prev => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
+    }
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(flashcards.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedFlashcards = flashcards.slice(startIndex, endIndex);
+
+  // Reset to page 1 if current page exceeds total pages
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
   };
 
   interface TruncationResult {
@@ -143,6 +238,22 @@ export default function FlashcardsPage() {
       </div>
 
       <div className="space-y-6">
+        {selectedCards.size > 0 && (
+          <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
+            <p className="text-sm font-medium">
+              {selectedCards.size} card{selectedCards.size !== 1 ? 's' : ''} selected
+            </p>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setBulkDeleting(true)}
+              disabled={isDeleting}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Selected
+            </Button>
+          </div>
+        )}
 
         {flashcards.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-24 text-center animate-in fade-in-50">
@@ -161,6 +272,17 @@ export default function FlashcardsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={
+                          paginatedFlashcards.length > 0 &&
+                          paginatedFlashcards.every(card => selectedCards.has(card.id))
+                        }
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all cards on this page"
+                        disabled={isDeleting}
+                      />
+                    </TableHead>
                     <TableHead>Deck</TableHead>
                     <TableHead>Front Content</TableHead>
                     <TableHead>Created</TableHead>
@@ -168,8 +290,16 @@ export default function FlashcardsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {flashcards.map((card) => (
-                    <TableRow key={card.id} className="group">
+                  {paginatedFlashcards.map((card) => (
+                    <TableRow key={card.id} className="group" style={{ opacity: isDeleting ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                      <TableCell className="w-[50px]">
+                        <Checkbox
+                          checked={selectedCards.has(card.id)}
+                          onCheckedChange={() => toggleCardSelection(card.id)}
+                          aria-label={`Select card ${card.id}`}
+                          disabled={isDeleting}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium whitespace-nowrap">
                         <Link
                           href={`/decks/${card.deckId}`}
@@ -216,6 +346,7 @@ export default function FlashcardsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setEditingCard(card)}
+                            disabled={isDeleting}
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
@@ -223,6 +354,7 @@ export default function FlashcardsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setDeletingCard(card)}
+                            disabled={isDeleting}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -233,6 +365,86 @@ export default function FlashcardsPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination Controls */}
+            {flashcards.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Show</span>
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={(value) => handlePageSizeChange(Number(value))}
+                  >
+                    <SelectTrigger className="w-[70px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="30">30</SelectItem>
+                      <SelectItem value="40">40</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span>
+                    Showing {startIndex + 1}-{Math.min(endIndex, flashcards.length)} of {flashcards.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first page, last page, current page, and pages around current
+                        if (page === 1 || page === totalPages) return true;
+                        if (Math.abs(page - currentPage) <= 1) return true;
+                        return false;
+                      })
+                      .map((page, index, array) => {
+                        // Add ellipsis
+                        const prevPage = array[index - 1];
+                        const showEllipsis = prevPage && page - prevPage > 1;
+
+                        return (
+                          <div key={page} className="flex items-center">
+                            {showEllipsis && (
+                              <span className="px-2 text-muted-foreground">...</span>
+                            )}
+                            <Button
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              className="w-8 h-8 p-0"
+                              onClick={() => setCurrentPage(page)}
+                            >
+                              {page}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -266,6 +478,22 @@ export default function FlashcardsPage() {
             }}
             title="Delete Card"
             description="Are you sure you want to delete this card? This action cannot be undone."
+          />
+        )}
+
+        {/* Bulk Delete Confirmation Dialog */}
+        {bulkDeleting && (
+          <DeleteConfirmDialog
+            open={bulkDeleting}
+            onOpenChange={(open) => {
+              if (!open) setBulkDeleting(false);
+            }}
+            onConfirm={() => {
+              handleBulkDelete();
+              setBulkDeleting(false);
+            }}
+            title="Delete Cards"
+            description={`Are you sure you want to delete ${selectedCards.size} card${selectedCards.size !== 1 ? 's' : ''}? This action cannot be undone.`}
           />
         )}
 

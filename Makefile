@@ -9,8 +9,7 @@ build:
 
 # Database migrations (uses DATABASE_URL_UNPOOLED for direct connection to avoid pooler issues)
 migration:
-	@read -p "Enter migration name: " name; \
-		doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations create '$$name' sql'
+	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations create $(name) sql'
 
 migrate:
 	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations up'
