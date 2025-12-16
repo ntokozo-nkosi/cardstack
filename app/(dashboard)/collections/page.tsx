@@ -138,13 +138,13 @@ export default function CollectionsPage() {
                             className="group relative flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:border-muted-foreground/20"
                         >
                             <div className="flex flex-1 flex-col p-6">
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start justify-between gap-2 min-w-0">
                                     <Link
                                         href={`/collections/${collection.id}`}
-                                        className="group/link flex items-center gap-2 font-semibold text-xl leading-tight hover:underline decoration-2 underline-offset-4 line-clamp-1"
+                                        className="group/link flex items-center gap-2 font-semibold text-xl leading-tight hover:underline decoration-2 underline-offset-4 line-clamp-1 min-w-0"
                                     >
-                                        <Folder className="h-5 w-5 text-primary transition-colors group-hover/link:text-primary/90" />
-                                        {collection.name}
+                                        <Folder className="h-5 w-5 text-primary transition-colors group-hover/link:text-primary/90 shrink-0" />
+                                        <span className="truncate">{collection.name}</span>
                                     </Link>
                                 </div>
 
