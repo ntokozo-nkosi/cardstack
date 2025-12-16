@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 interface EditDeckDialogProps {
   deck: {
@@ -47,10 +48,12 @@ export function EditDeckDialog({ deck, open, onOpenChange, onSuccess }: EditDeck
         throw new Error('Failed to update deck')
       }
 
+      toast.success('Deck updated successfully')
       onOpenChange(false)
       onSuccess()
     } catch (error) {
       console.error('Error updating deck:', error)
+      toast.error('Failed to update deck')
     } finally {
       setLoading(false)
     }

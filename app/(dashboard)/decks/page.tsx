@@ -34,6 +34,7 @@ export default function DecksPage() {
       setDecks(data)
     } catch (error) {
       console.error('Error fetching decks:', error)
+      toast.error('Failed to fetch decks')
     } finally {
       setLoading(false)
     }

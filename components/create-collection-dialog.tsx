@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 interface CreateCollectionDialogProps {
     open: boolean
@@ -35,10 +36,12 @@ export function CreateCollectionDialog({ open, onOpenChange, onSuccess }: Create
 
             setName('')
             setDescription('')
+            toast.success('Collection created successfully')
             onOpenChange(false)
             onSuccess()
         } catch (error) {
             console.error('Error creating collection:', error)
+            toast.error('Failed to create collection')
         } finally {
             setLoading(false)
         }

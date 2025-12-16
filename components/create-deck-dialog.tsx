@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 interface CreateDeckDialogProps {
   open: boolean
@@ -35,10 +36,12 @@ export function CreateDeckDialog({ open, onOpenChange, onSuccess }: CreateDeckDi
 
       setName('')
       setDescription('')
+      toast.success('Deck created successfully')
       onOpenChange(false)
       onSuccess()
     } catch (error) {
       console.error('Error creating deck:', error)
+      toast.error('Failed to create deck')
     } finally {
       setLoading(false)
     }

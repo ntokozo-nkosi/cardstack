@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 interface Collection {
     id: string
@@ -37,9 +38,12 @@ export function AddToCollectionDialog({
                     if (response.ok) {
                         const data = await response.json()
                         setCollections(data)
+                    } else {
+                        throw new Error('Failed to fetch collections')
                     }
                 } catch (error) {
                     console.error('Failed to fetch collections:', error)
+                    toast.error('Failed to fetch collections')
                 } finally {
                     setFetchingCollections(false)
                 }
@@ -65,10 +69,12 @@ export function AddToCollectionDialog({
             }
 
             setSelectedCollectionId('')
+            toast.success('Deck added to collection')
             onOpenChange(false)
             onSuccess?.()
         } catch (error) {
             console.error('Error adding deck to collection:', error)
+            toast.error('Failed to add deck to collection')
         } finally {
             setLoading(false)
         }
