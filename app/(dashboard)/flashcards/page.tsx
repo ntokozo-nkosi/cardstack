@@ -138,7 +138,7 @@ export default function FlashcardsPage() {
   const toggleSelectAll = () => {
     const currentPageIds = paginatedFlashcards.map(card => card.id);
     const allCurrentPageSelected = currentPageIds.every(id => selectedCards.has(id));
-    
+
     if (allCurrentPageSelected && currentPageIds.length > 0) {
       // Deselect all on current page
       setSelectedCards(prev => {
@@ -377,7 +377,7 @@ export default function FlashcardsPage() {
             </div>
 
             {/* Pagination Controls */}
-            {flashcards.length > 0 && (
+            {flashcards.length > 10 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span>Show</span>
