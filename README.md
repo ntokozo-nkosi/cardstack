@@ -8,11 +8,10 @@ A clean, simple flashcard app for creating and studying decks.
 - **Card Management**: Add cards with front/back content to any deck
 - **Study Mode**: Practice with shuffled cards and click-to-flip interaction
 - **Mobile Friendly**: Fully responsive design for all screen sizes
-- **Clean UI**: Built with shadcn/ui components
 
 ## Tech Stack
 
-- **Next.js 15** - React framework with App Router
+- **Next.js 16** - React framework with App Router
 - **TypeScript** - Type safety
 - **PostgreSQL** - Database (Neon)
 - **Goose** - Database migrations
@@ -21,46 +20,39 @@ A clean, simple flashcard app for creating and studying decks.
 
 ## Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/ntokozo-nkosi/cardstack.git
-   cd cardstack
-   ```
+1. **Prerequisites**
+   - Install [Doppler CLI](https://docs.doppler.com/docs/cli) and setup your account
+   - This project uses Doppler for managing secrets and environment variables
 
 2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   Add your Neon database connection string to `.env`:
-   ```
-   DATABASE_URL="your_neon_connection_string"
-   ```
-
-4. **Run database migrations**
+3. **Run database migrations**
    ```bash
    make migrate
    ```
 
-5. **Run the development server**
+4. **Run the development server**
    ```bash
-   npm run dev
+   make dev
    ```
 
    Open [http://localhost:3000](http://localhost:3000)
 
-## Database Commands
+## Makefile Commands
 
-Using the Makefile with Goose:
+This project uses a Makefile for common development tasks. All commands automatically handle Doppler secrets:
+
 ```bash
-make migration    # Create a new migration file
-make migrate      # Apply all pending migrations
+make dev          # Start development server
+make build        # Build the application
+make migrate      # Apply database migrations
+make migration    # Create new migration (requires name=your_migration_name)
 make rollback     # Roll back the last migration
 make reset        # Reset all migrations
+make hard-reset   # Drop and recreate database schema
 ```
 
 ## Project Structure
