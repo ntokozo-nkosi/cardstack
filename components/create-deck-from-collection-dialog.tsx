@@ -12,7 +12,7 @@ import { useAppStore } from '@/lib/stores/app-store'
 interface CreateDeckFromCollectionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess: () => void
+  onSuccess?: () => void
   collectionId: string
 }
 
@@ -25,8 +25,7 @@ export function CreateDeckFromCollectionDialog({
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
-  const addDeck = useAppStore((state) => state.addDeck)
-  const incrementCollectionDeckCount = useAppStore((state) => state.incrementCollectionDeckCount)
+  const createDeckInCollection = useAppStore((state) => state.createDeckInCollection)
 
   const resetForm = () => {
     setName('')
@@ -37,36 +36,16 @@ export function CreateDeckFromCollectionDialog({
     e.preventDefault()
     setLoading(true)
 
-    try {
-      const response = await fetch(`/api/collections/${collectionId}/create-deck`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description })
-      })
+    const newDeck = await createDeckInCollection(collectionId, { name, description })
+    setLoading(false)
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create deck')
-      }
-
-      const newDeck = await response.json()
-
-      // Add to decks store and increment collection count
-      useAppStore.setState((state) => ({
-        decks: [{ ...newDeck, _count: { cards: 0 } }, ...state.decks],
-        decksLoaded: true,
-      }))
-      incrementCollectionDeckCount(collectionId)
-
+    if (newDeck) {
       toast.success('Deck created and added to collection')
       resetForm()
       onOpenChange(false)
-      onSuccess()
-    } catch (error: any) {
-      console.error('Error creating deck:', error)
-      toast.error(error.message || 'Failed to create deck')
-    } finally {
-      setLoading(false)
+      onSuccess?.()
+    } else {
+      toast.error('Failed to create deck')
     }
   }
 

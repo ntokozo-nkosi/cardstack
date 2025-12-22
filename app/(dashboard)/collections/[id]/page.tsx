@@ -14,10 +14,10 @@ import { toast } from 'sonner'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { cn } from '@/lib/utils'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
 interface Deck {
@@ -40,7 +40,11 @@ interface Collection {
 export default function CollectionDetailsPage() {
     const params = useParams<{ id: string }>()
     const router = useRouter()
-    const decrementCollectionDeckCount = useAppStore((state) => state.decrementCollectionDeckCount)
+    const setCollectionDecks = useAppStore((state) => state.setCollectionDecks)
+    const setCollectionDetails = useAppStore((state) => state.setCollectionDetails)
+    const collectionDecks = useAppStore((state) => state.collectionDecks)
+    const collectionDetails = useAppStore((state) => state.collectionDetails)
+    const removeDeckFromCollection = useAppStore((state) => state.removeDeckFromCollection)
     const [collection, setCollection] = useState<Collection | null>(null)
     const [loading, setLoading] = useState(true)
     const [addDeckDialogOpen, setAddDeckDialogOpen] = useState(false)
@@ -56,6 +60,18 @@ export default function CollectionDetailsPage() {
     const [isSavingDescription, setIsSavingDescription] = useState(false)
     const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
 
+    // Get data from store, falling back to local state for initial load
+    const cachedDetails = params.id ? collectionDetails[params.id] : null
+    const cachedDecks = params.id ? collectionDecks[params.id] : null
+    const decks = cachedDecks ?? collection?.decks ?? []
+    const hasCachedData = Boolean(cachedDetails && cachedDecks)
+
+    // Use cached details if available, otherwise use fetched collection
+    const displayCollection = cachedDetails ? {
+        ...cachedDetails,
+        decks: decks
+    } : collection
+
     const fetchCollection = useCallback(async () => {
         try {
             const response = await fetch(`/api/collections/${params.id}`)
@@ -68,19 +84,34 @@ export default function CollectionDetailsPage() {
             }
             const data = await response.json()
             setCollection(data)
+            // Update the store with both decks and details
+            if (params.id) {
+                if (data.decks) setCollectionDecks(params.id, data.decks)
+                setCollectionDetails(params.id, {
+                    id: data.id,
+                    name: data.name,
+                    description: data.description,
+                    createdAt: data.createdAt
+                })
+            }
         } catch (error) {
             console.error('Error fetching collection:', error)
             toast.error('Failed to fetch collection')
         } finally {
             setLoading(false)
         }
-    }, [params.id, router])
+    }, [params.id, router, setCollectionDecks, setCollectionDetails])
 
     useEffect(() => {
         if (params.id) {
-            fetchCollection()
+            if (hasCachedData) {
+                // Data is cached, no need to fetch
+                setLoading(false)
+            } else {
+                fetchCollection()
+            }
         }
-    }, [params.id, fetchCollection])
+    }, [params.id, hasCachedData, fetchCollection])
 
     useEffect(() => {
         if (isEditingTitle && titleInputRef.current) {
@@ -101,25 +132,25 @@ export default function CollectionDetailsPage() {
     }, [isEditingDescription])
 
     const startEditingTitle = () => {
-        if (collection) {
-            setEditedTitle(collection.name)
+        if (displayCollection) {
+            setEditedTitle(displayCollection.name)
             setIsEditingTitle(true)
         }
     }
 
     const cancelEditingTitle = () => {
-        setEditedTitle(collection?.name || '')
+        setEditedTitle(displayCollection?.name || '')
         setIsEditingTitle(false)
     }
 
     const saveTitle = async () => {
         if (!editedTitle.trim()) {
-            setEditedTitle(collection?.name || '')
+            setEditedTitle(displayCollection?.name || '')
             setIsEditingTitle(false)
             return
         }
 
-        if (editedTitle.trim() === collection?.name) {
+        if (editedTitle.trim() === displayCollection?.name) {
             setIsEditingTitle(false)
             return
         }
@@ -129,7 +160,7 @@ export default function CollectionDetailsPage() {
             const response = await fetch(`/api/collections/${params.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: editedTitle.trim(), description: collection?.description })
+                body: JSON.stringify({ name: editedTitle.trim(), description: displayCollection?.description })
             })
 
             if (!response.ok) throw new Error('Failed to update collection name')
@@ -140,7 +171,7 @@ export default function CollectionDetailsPage() {
         } catch (error) {
             console.error('Error updating collection name:', error)
             toast.error('Failed to update collection name')
-            setEditedTitle(collection?.name || '')
+            setEditedTitle(displayCollection?.name || '')
         } finally {
             setIsSavingTitle(false)
         }
@@ -155,21 +186,21 @@ export default function CollectionDetailsPage() {
     }
 
     const startEditingDescription = () => {
-        if (collection) {
-            setEditedDescription(collection.description || '')
+        if (displayCollection) {
+            setEditedDescription(displayCollection.description || '')
             setIsEditingDescription(true)
         }
     }
 
     const cancelEditingDescription = () => {
-        setEditedDescription(collection?.description || '')
+        setEditedDescription(displayCollection?.description || '')
         setIsEditingDescription(false)
     }
 
     const saveDescription = async () => {
         const trimmedDescription = editedDescription.trim()
-        
-        if (trimmedDescription === (collection?.description || '')) {
+
+        if (trimmedDescription === (displayCollection?.description || '')) {
             setIsEditingDescription(false)
             return
         }
@@ -179,9 +210,9 @@ export default function CollectionDetailsPage() {
             const response = await fetch(`/api/collections/${params.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    name: collection?.name, 
-                    description: trimmedDescription || null 
+                body: JSON.stringify({
+                    name: displayCollection?.name,
+                    description: trimmedDescription || null
                 })
             })
 
@@ -193,7 +224,7 @@ export default function CollectionDetailsPage() {
         } catch (error) {
             console.error('Error updating collection description:', error)
             toast.error('Failed to update collection description')
-            setEditedDescription(collection?.description || '')
+            setEditedDescription(displayCollection?.description || '')
         } finally {
             setIsSavingDescription(false)
         }
@@ -214,24 +245,15 @@ export default function CollectionDetailsPage() {
     }
 
     const confirmRemoveDeck = async () => {
-        if (!selectedDeckToRemove || !collection) return
+        if (!selectedDeckToRemove || !displayCollection) return
 
-        try {
-            const response = await fetch(`/api/collections/${collection.id}/decks`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deckId: selectedDeckToRemove.id })
-            })
+        const success = await removeDeckFromCollection(displayCollection.id, selectedDeckToRemove.id)
 
-            if (!response.ok) throw new Error('Failed to remove deck')
-
-            decrementCollectionDeckCount(collection.id)
+        if (success) {
             toast.success('Deck removed from collection')
-            await fetchCollection()
             setDeleteDeckDialogOpen(false)
             setSelectedDeckToRemove(null)
-        } catch (error) {
-            console.error('Error removing deck:', error)
+        } else {
             toast.error('Failed to remove deck')
         }
     }
@@ -271,7 +293,7 @@ export default function CollectionDetailsPage() {
         )
     }
 
-    if (!collection) return null
+    if (!displayCollection) return null
 
     return (
         <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -308,7 +330,7 @@ export default function CollectionDetailsPage() {
                     ) : (
                         <div className="group mb-2 flex cursor-pointer items-center gap-3" onClick={startEditingTitle}>
                             <h1 className="truncate text-3xl font-bold tracking-tight transition-colors group-hover:text-primary/90 sm:text-4xl">
-                                {collection.name}
+                                {displayCollection.name}
                             </h1>
                             <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100">
                                 <Pencil className="h-4 w-4 text-muted-foreground" />
@@ -335,17 +357,17 @@ export default function CollectionDetailsPage() {
                             )}
                         </div>
                     ) : (
-                        <div 
+                        <div
                             className="group/desc cursor-pointer rounded-md px-2 py-1 -mx-2 hover:bg-muted/50 transition-colors"
                             onClick={startEditingDescription}
                         >
                             <div className="flex items-start gap-2">
-                                <p className={collection.description ? "text-lg text-muted-foreground flex-1" : "text-lg text-muted-foreground flex-1 italic opacity-70"}>
-                                    {collection.description || "No description"}
+                                <p className={displayCollection.description ? "text-lg text-muted-foreground flex-1" : "text-lg text-muted-foreground flex-1 italic opacity-70"}>
+                                    {displayCollection.description || "No description"}
                                 </p>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="h-6 w-6 opacity-0 transition-opacity group-hover/desc:opacity-100"
                                 >
                                     <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
@@ -375,7 +397,7 @@ export default function CollectionDetailsPage() {
                 </div>
             </div>
 
-            {collection.decks.length === 0 ? (
+            {decks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-24 text-center animate-in fade-in-50">
                     <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted/50 mb-6">
                         <Library className="h-10 w-10 text-muted-foreground" />
@@ -387,7 +409,7 @@ export default function CollectionDetailsPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {collection.decks.map((deck) => (
+                    {decks.map((deck) => (
                         <div
                             key={deck.id}
                             className="group relative flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:border-muted-foreground/20"
@@ -456,15 +478,15 @@ export default function CollectionDetailsPage() {
             <AddDeckToCollectionDialog
                 open={addDeckDialogOpen}
                 onOpenChange={setAddDeckDialogOpen}
-                collectionId={collection.id}
-                existingDeckIds={collection.decks.map(d => d.id)}
+                collectionId={displayCollection.id}
+                existingDeckIds={decks.map(d => d.id)}
                 onSuccess={fetchCollection}
             />
 
             <CreateDeckFromCollectionDialog
                 open={createDeckDialogOpen}
                 onOpenChange={setCreateDeckDialogOpen}
-                collectionId={collection.id}
+                collectionId={displayCollection.id}
                 onSuccess={fetchCollection}
             />
 

@@ -13,7 +13,7 @@ interface AddDeckToCollectionDialogProps {
     onOpenChange: (open: boolean) => void
     collectionId: string
     existingDeckIds: string[]
-    onSuccess: () => void
+    onSuccess?: () => void
 }
 
 export function AddDeckToCollectionDialog({
@@ -24,7 +24,7 @@ export function AddDeckToCollectionDialog({
     onSuccess
 }: AddDeckToCollectionDialogProps) {
     const { decks, isLoading: fetchingDecks } = useDecks()
-    const incrementCollectionDeckCount = useAppStore((state) => state.incrementCollectionDeckCount)
+    const addDeckToCollection = useAppStore((state) => state.addDeckToCollection)
     const [selectedDeckId, setSelectedDeckId] = useState('')
     const [loading, setLoading] = useState(false)
 
@@ -35,27 +35,16 @@ export function AddDeckToCollectionDialog({
         if (!selectedDeckId) return
 
         setLoading(true)
-        try {
-            const response = await fetch(`/api/collections/${collectionId}/decks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deckId: selectedDeckId })
-            })
+        const success = await addDeckToCollection(collectionId, selectedDeckId)
+        setLoading(false)
 
-            if (!response.ok) {
-                throw new Error('Failed to add deck to collection')
-            }
-
-            incrementCollectionDeckCount(collectionId)
+        if (success) {
             setSelectedDeckId('')
             toast.success('Deck added to collection')
             onOpenChange(false)
-            onSuccess()
-        } catch (error) {
-            console.error('Error adding deck to collection:', error)
+            onSuccess?.()
+        } else {
             toast.error('Failed to add deck to collection')
-        } finally {
-            setLoading(false)
         }
     }
 
