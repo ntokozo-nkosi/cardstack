@@ -14,7 +14,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { front, back } = body
+    const { front, back, deckId } = body
 
     if (!front || front.trim() === '') {
       return NextResponse.json(
@@ -30,9 +30,16 @@ export async function PUT(
       )
     }
 
+    if (deckId !== undefined && deckId !== null && typeof deckId !== 'string') {
+      return NextResponse.json(
+        { error: 'Invalid deck ID' },
+        { status: 400 }
+      )
+    }
+
     const result = await query(
-      'SELECT * FROM update_card_if_owned($1, $2, $3, $4)',
-      [id, user.id, front.trim(), back.trim()]
+      'SELECT * FROM update_card_if_owned($1, $2, $3, $4, $5)',
+      [id, user.id, front.trim(), back.trim(), deckId || null]
     )
 
     if (result.rows.length === 0) {
