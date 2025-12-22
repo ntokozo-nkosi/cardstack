@@ -30,7 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, MoreHorizontal, Edit2, Trash2, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, MoreHorizontal, Edit2, Trash2, Upload, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useAppStore } from '@/lib/stores/app-store';
 
 interface Flashcard {
   id: string;
@@ -42,6 +43,7 @@ interface Flashcard {
 }
 
 export default function FlashcardsPage() {
+  const decrementDeckCardCount = useAppStore((state) => state.decrementDeckCardCount);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
@@ -77,6 +79,7 @@ export default function FlashcardsPage() {
   const handleDelete = async (cardId: string) => {
     setIsDeleting(true);
     try {
+      const cardToDelete = flashcards.find(card => card.id === cardId);
       const response = await fetch(`/api/cards/${cardId}`, {
         method: 'DELETE',
       });
@@ -85,6 +88,9 @@ export default function FlashcardsPage() {
         throw new Error('Failed to delete card');
       }
 
+      if (cardToDelete) {
+        decrementDeckCardCount(cardToDelete.deckId);
+      }
       setFlashcards(prev => prev.filter(card => card.id !== cardId));
       toast.success('Card deleted successfully');
     } catch (error) {
@@ -99,6 +105,12 @@ export default function FlashcardsPage() {
     setIsDeleting(true);
     try {
       const cardIds = Array.from(selectedCards);
+      // Count cards per deck before deletion
+      const deckCounts = new Map<string, number>();
+      flashcards.filter(card => selectedCards.has(card.id)).forEach(card => {
+        deckCounts.set(card.deckId, (deckCounts.get(card.deckId) || 0) + 1);
+      });
+
       const response = await fetch('/api/cards/bulk', {
         method: 'DELETE',
         headers: {
@@ -112,6 +124,12 @@ export default function FlashcardsPage() {
       }
 
       const { deletedCount } = await response.json();
+
+      // Update deck counts in store
+      deckCounts.forEach((count, deckId) => {
+        decrementDeckCardCount(deckId, count);
+      });
+
       setFlashcards(prev => prev.filter(card => !selectedCards.has(card.id)));
       setSelectedCards(new Set());
       toast.success(`${deletedCount} card${deletedCount !== 1 ? 's' : ''} deleted successfully`);

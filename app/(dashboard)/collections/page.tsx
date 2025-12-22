@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Plus, Trash2, Folder, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,40 +9,15 @@ import { CreateCollectionDialog } from '@/components/create-collection-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-
-interface Collection {
-    id: string
-    name: string
-    description: string | null
-    _count: {
-        decks: number
-    }
-}
+import { useCollections } from '@/hooks/use-collections'
+import { useAppStore, type Collection } from '@/lib/stores/app-store'
 
 export default function CollectionsPage() {
-    const [collections, setCollections] = useState<Collection[]>([])
-    const [loading, setLoading] = useState(true)
+    const { collections, isLoading } = useCollections()
+    const deleteCollection = useAppStore((state) => state.deleteCollection)
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
-
-    const fetchCollections = async () => {
-        try {
-            const response = await fetch('/api/collections')
-            if (!response.ok) throw new Error('Failed to fetch collections')
-            const data = await response.json()
-            setCollections(data)
-        } catch (error) {
-            console.error('Error fetching collections:', error)
-            toast.error('Failed to fetch collections')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchCollections()
-    }, [])
 
     const handleDelete = (collection: Collection) => {
         setSelectedCollection(collection)
@@ -52,24 +27,17 @@ export default function CollectionsPage() {
     const confirmDelete = async () => {
         if (!selectedCollection) return
 
-        try {
-            const response = await fetch(`/api/collections/${selectedCollection.id}`, {
-                method: 'DELETE'
-            })
-
-            if (!response.ok) throw new Error('Failed to delete collection')
-
+        const success = await deleteCollection(selectedCollection.id)
+        if (success) {
             toast.success('Collection deleted')
-            await fetchCollections()
             setDeleteDialogOpen(false)
             setSelectedCollection(null)
-        } catch (error) {
-            console.error('Error deleting collection:', error)
+        } else {
             toast.error('Failed to delete collection')
         }
     }
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -192,7 +160,6 @@ export default function CollectionsPage() {
             <CreateCollectionDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                onSuccess={fetchCollections}
             />
 
             <DeleteConfirmDialog

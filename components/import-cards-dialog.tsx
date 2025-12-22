@@ -11,7 +11,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
     Select,
@@ -25,6 +24,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Loader2, Upload, AlertCircle, CheckCircle2, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import Papa from 'papaparse'
+import { useDecks } from '@/hooks/use-decks'
+import { useAppStore } from '@/lib/stores/app-store'
 
 interface ImportCardsDialogProps {
     deckId?: string
@@ -51,38 +52,16 @@ export function ImportCardsDialog({
     const [isParsing, setIsParsing] = useState(false)
     const [isImporting, setIsImporting] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [decks, setDecks] = useState<Array<{ id: string; name: string }>>([])
     const [selectedDeckId, setSelectedDeckId] = useState(initialDeckId || '')
-    const [loadingDecks, setLoadingDecks] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
-
-    // Fetch decks if not provided
-    useEffect(() => {
-        if (open && !initialDeckId) {
-            fetchDecks()
-        }
-    }, [open, initialDeckId])
+    const { decks, isLoading: loadingDecks } = useDecks()
+    const incrementDeckCardCount = useAppStore((state) => state.incrementDeckCardCount)
 
     useEffect(() => {
         if (initialDeckId) {
             setSelectedDeckId(initialDeckId)
         }
     }, [initialDeckId])
-
-    const fetchDecks = async () => {
-        setLoadingDecks(true)
-        try {
-            const response = await fetch('/api/decks')
-            if (!response.ok) throw new Error('Failed to fetch decks')
-            const data = await response.json()
-            setDecks(data)
-        } catch (error) {
-            console.error('Error fetching decks:', error)
-            toast.error('Failed to load decks')
-        } finally {
-            setLoadingDecks(false)
-        }
-    }
 
     const resetState = () => {
         setFile(null)
@@ -243,6 +222,7 @@ export function ImportCardsDialog({
             }
 
             const count = parsedCards.length
+            incrementDeckCardCount(targetDeckId, count)
             toast.success(`Successfully imported ${count} card${count !== 1 ? 's' : ''}`)
             onSuccess()
             handleOpenChange(false)

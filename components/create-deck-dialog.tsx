@@ -7,44 +7,37 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useAppStore } from '@/lib/stores/app-store'
 
 interface CreateDeckDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess: () => void
+  onSuccess?: () => void
 }
 
 export function CreateDeckDialog({ open, onOpenChange, onSuccess }: CreateDeckDialogProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
+  const addDeck = useAppStore((state) => state.addDeck)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
-    try {
-      const response = await fetch('/api/decks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description })
-      })
+    const newDeck = await addDeck({ name, description })
 
-      if (!response.ok) {
-        throw new Error('Failed to create deck')
-      }
-
+    if (newDeck) {
       setName('')
       setDescription('')
       toast.success('Deck created successfully')
       onOpenChange(false)
-      onSuccess()
-    } catch (error) {
-      console.error('Error creating deck:', error)
+      onSuccess?.()
+    } else {
       toast.error('Failed to create deck')
-    } finally {
-      setLoading(false)
     }
+
+    setLoading(false)
   }
 
   return (

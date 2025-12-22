@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAppStore } from '@/lib/stores/app-store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { CreateCardDialog } from '@/components/create-card-dialog'
@@ -37,6 +38,9 @@ export default function DeckDetailPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
+
+  const decrementDeckCardCount = useAppStore((state) => state.decrementDeckCardCount)
+  const deleteDeckFromStore = useAppStore((state) => state.deleteDeck)
 
   const [deck, setDeck] = useState<Deck | null>(null)
   const [loading, setLoading] = useState(true)
@@ -229,6 +233,7 @@ export default function DeckDetailPage() {
 
       if (!response.ok) throw new Error('Failed to delete card')
 
+      decrementDeckCardCount(id)
       toast.success('Card deleted')
       await fetchDeck()
       setDeleteDialogOpen(false)
@@ -242,17 +247,11 @@ export default function DeckDetailPage() {
   const confirmDeleteDeck = async () => {
     if (!deck) return
 
-    try {
-      const response = await fetch(`/api/decks/${deck.id}`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) throw new Error('Failed to delete deck')
-
+    const success = await deleteDeckFromStore(deck.id)
+    if (success) {
       toast.success('Deck deleted')
       router.push('/decks')
-    } catch (error) {
-      console.error('Error deleting deck:', error)
+    } else {
       toast.error('Failed to delete deck')
     }
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Plus, Play, Trash2, Library } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,40 +9,15 @@ import { CreateDeckDialog } from '@/components/create-deck-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-
-interface Deck {
-  id: string
-  name: string
-  description: string | null
-  _count: {
-    cards: number
-  }
-}
+import { useDecks } from '@/hooks/use-decks'
+import { useAppStore, type Deck } from '@/lib/stores/app-store'
 
 export default function DecksPage() {
-  const [decks, setDecks] = useState<Deck[]>([])
-  const [loading, setLoading] = useState(true)
+  const { decks, isLoading } = useDecks()
+  const deleteDeck = useAppStore((state) => state.deleteDeck)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null)
-
-  const fetchDecks = async () => {
-    try {
-      const response = await fetch('/api/decks')
-      if (!response.ok) throw new Error('Failed to fetch decks')
-      const data = await response.json()
-      setDecks(data)
-    } catch (error) {
-      console.error('Error fetching decks:', error)
-      toast.error('Failed to fetch decks')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchDecks()
-  }, [])
 
   const handleDelete = (deck: Deck) => {
     setSelectedDeck(deck)
@@ -52,24 +27,17 @@ export default function DecksPage() {
   const confirmDelete = async () => {
     if (!selectedDeck) return
 
-    try {
-      const response = await fetch(`/api/decks/${selectedDeck.id}`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) throw new Error('Failed to delete deck')
-
+    const success = await deleteDeck(selectedDeck.id)
+    if (success) {
       toast.success('Deck deleted')
-      await fetchDecks()
       setDeleteDialogOpen(false)
       setSelectedDeck(null)
-    } catch (error) {
-      console.error('Error deleting deck:', error)
+    } else {
       toast.error('Failed to delete deck')
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -197,7 +165,6 @@ export default function DecksPage() {
       <CreateDeckDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        onSuccess={fetchDecks}
       />
 
       <DeleteConfirmDialog
@@ -210,4 +177,3 @@ export default function DecksPage() {
     </div>
   )
 }
-

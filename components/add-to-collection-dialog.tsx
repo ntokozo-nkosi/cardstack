@@ -1,15 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-
-interface Collection {
-    id: string
-    name: string
-}
+import { useCollections } from '@/hooks/use-collections'
+import { useAppStore } from '@/lib/stores/app-store'
 
 interface AddToCollectionDialogProps {
     open: boolean
@@ -24,33 +21,10 @@ export function AddToCollectionDialog({
     deckId,
     onSuccess
 }: AddToCollectionDialogProps) {
-    const [collections, setCollections] = useState<Collection[]>([])
+    const { collections, isLoading: fetchingCollections } = useCollections()
+    const incrementCollectionDeckCount = useAppStore((state) => state.incrementCollectionDeckCount)
     const [selectedCollectionId, setSelectedCollectionId] = useState('')
     const [loading, setLoading] = useState(false)
-    const [fetchingCollections, setFetchingCollections] = useState(false)
-
-    useEffect(() => {
-        if (open) {
-            const fetchCollections = async () => {
-                setFetchingCollections(true)
-                try {
-                    const response = await fetch('/api/collections')
-                    if (response.ok) {
-                        const data = await response.json()
-                        setCollections(data)
-                    } else {
-                        throw new Error('Failed to fetch collections')
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch collections:', error)
-                    toast.error('Failed to fetch collections')
-                } finally {
-                    setFetchingCollections(false)
-                }
-            }
-            fetchCollections()
-        }
-    }, [open])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -68,6 +42,7 @@ export function AddToCollectionDialog({
                 throw new Error('Failed to add deck to collection')
             }
 
+            incrementCollectionDeckCount(selectedCollectionId)
             setSelectedCollectionId('')
             toast.success('Deck added to collection')
             onOpenChange(false)

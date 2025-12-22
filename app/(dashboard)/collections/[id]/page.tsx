@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Plus, ArrowLeft, Play, X, Pencil, Loader2, Library, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAppStore } from '@/lib/stores/app-store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { AddDeckToCollectionDialog } from '@/components/add-deck-to-collection-dialog'
@@ -39,6 +40,7 @@ interface Collection {
 export default function CollectionDetailsPage() {
     const params = useParams<{ id: string }>()
     const router = useRouter()
+    const decrementCollectionDeckCount = useAppStore((state) => state.decrementCollectionDeckCount)
     const [collection, setCollection] = useState<Collection | null>(null)
     const [loading, setLoading] = useState(true)
     const [addDeckDialogOpen, setAddDeckDialogOpen] = useState(false)
@@ -223,6 +225,7 @@ export default function CollectionDetailsPage() {
 
             if (!response.ok) throw new Error('Failed to remove deck')
 
+            decrementCollectionDeckCount(collection.id)
             toast.success('Deck removed from collection')
             await fetchCollection()
             setDeleteDeckDialogOpen(false)

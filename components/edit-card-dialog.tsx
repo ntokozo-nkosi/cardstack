@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useDecks } from '@/hooks/use-decks'
 
 interface EditCardDialogProps {
   card: {
@@ -33,25 +34,9 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess }: EditCard
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
   const [loading, setLoading] = useState(false)
-  const [decks, setDecks] = useState<Array<{ id: string; name: string }>>([])
   const [selectedDeckId, setSelectedDeckId] = useState('')
   const [currentDeckId, setCurrentDeckId] = useState('')
-  const [loadingDecks, setLoadingDecks] = useState(false)
-
-  const fetchDecks = async () => {
-    setLoadingDecks(true)
-    try {
-      const response = await fetch('/api/decks')
-      if (!response.ok) throw new Error('Failed to fetch decks')
-      const data = await response.json()
-      setDecks(data)
-    } catch (error) {
-      console.error('Error fetching decks:', error)
-      toast.error('Failed to load decks')
-    } finally {
-      setLoadingDecks(false)
-    }
-  }
+  const { decks, isLoading: loadingDecks } = useDecks()
 
   useEffect(() => {
     if (open && card) {
@@ -59,7 +44,6 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess }: EditCard
       setBack(card.back)
       setCurrentDeckId(card.deckId || '')
       setSelectedDeckId(card.deckId || '')
-      fetchDecks()
     }
   }, [open, card])
 

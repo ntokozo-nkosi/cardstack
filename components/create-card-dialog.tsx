@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/select'
 import { Loader2, Plus, Save } from 'lucide-react'
 import { toast } from 'sonner'
+import { useDecks } from '@/hooks/use-decks'
+import { useAppStore } from '@/lib/stores/app-store'
 
 interface CreateCardDialogProps {
   deckId?: string
@@ -29,16 +31,9 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
   const [loading, setLoading] = useState(false)
-  const [decks, setDecks] = useState<Array<{ id: string; name: string }>>([])
   const [selectedDeckId, setSelectedDeckId] = useState(initialDeckId || '')
-  const [loadingDecks, setLoadingDecks] = useState(false)
-
-  // Fetch decks when dialog opens and no deckId is provided
-  useEffect(() => {
-    if (open && !initialDeckId) {
-      fetchDecks()
-    }
-  }, [open, initialDeckId])
+  const { decks, isLoading: loadingDecks } = useDecks()
+  const incrementDeckCardCount = useAppStore((state) => state.incrementDeckCardCount)
 
   // Set selected deck when initialDeckId changes
   useEffect(() => {
@@ -58,23 +53,6 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
     }
   }, [open, initialDeckId])
 
-  const fetchDecks = async () => {
-    setLoadingDecks(true)
-    try {
-      const response = await fetch('/api/decks')
-      if (!response.ok) {
-        throw new Error('Failed to fetch decks')
-      }
-      const data = await response.json()
-      setDecks(data)
-    } catch (error) {
-      console.error('Error fetching decks:', error)
-      toast.error('Failed to load decks')
-    } finally {
-      setLoadingDecks(false)
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent, addAnother: boolean = false) => {
     e.preventDefault()
     setLoading(true)
@@ -91,6 +69,7 @@ export function CreateCardDialog({ deckId: initialDeckId, open, onOpenChange, on
         throw new Error('Failed to create card')
       }
 
+      incrementDeckCardCount(targetDeckId)
       setFront('')
       setBack('')
       toast.success('Card created')

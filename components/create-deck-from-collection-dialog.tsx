@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useAppStore } from '@/lib/stores/app-store'
 
 interface CreateDeckFromCollectionDialogProps {
   open: boolean
@@ -24,6 +25,8 @@ export function CreateDeckFromCollectionDialog({
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
+  const addDeck = useAppStore((state) => state.addDeck)
+  const incrementCollectionDeckCount = useAppStore((state) => state.incrementCollectionDeckCount)
 
   const resetForm = () => {
     setName('')
@@ -45,6 +48,15 @@ export function CreateDeckFromCollectionDialog({
         const error = await response.json()
         throw new Error(error.error || 'Failed to create deck')
       }
+
+      const newDeck = await response.json()
+
+      // Add to decks store and increment collection count
+      useAppStore.setState((state) => ({
+        decks: [{ ...newDeck, _count: { cards: 0 } }, ...state.decks],
+        decksLoaded: true,
+      }))
+      incrementCollectionDeckCount(collectionId)
 
       toast.success('Deck created and added to collection')
       resetForm()

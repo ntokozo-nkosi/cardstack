@@ -7,44 +7,37 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useAppStore } from '@/lib/stores/app-store'
 
 interface CreateCollectionDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSuccess: () => void
+    onSuccess?: () => void
 }
 
 export function CreateCollectionDialog({ open, onOpenChange, onSuccess }: CreateCollectionDialogProps) {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [loading, setLoading] = useState(false)
+    const addCollection = useAppStore((state) => state.addCollection)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
 
-        try {
-            const response = await fetch('/api/collections', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, description })
-            })
+        const newCollection = await addCollection({ name, description })
 
-            if (!response.ok) {
-                throw new Error('Failed to create collection')
-            }
-
+        if (newCollection) {
             setName('')
             setDescription('')
             toast.success('Collection created successfully')
             onOpenChange(false)
-            onSuccess()
-        } catch (error) {
-            console.error('Error creating collection:', error)
+            onSuccess?.()
+        } else {
             toast.error('Failed to create collection')
-        } finally {
-            setLoading(false)
         }
+
+        setLoading(false)
     }
 
     return (
