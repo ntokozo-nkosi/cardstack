@@ -7,12 +7,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface EditCardDialogProps {
   card: {
     id: string
     front: string
     back: string
+    deckId?: string
   } | null
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -25,13 +33,35 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess }: EditCard
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
   const [loading, setLoading] = useState(false)
+  const [decks, setDecks] = useState<Array<{ id: string; name: string }>>([])
+  const [selectedDeckId, setSelectedDeckId] = useState('')
+  const [currentDeckId, setCurrentDeckId] = useState('')
+  const [loadingDecks, setLoadingDecks] = useState(false)
+
+  const fetchDecks = async () => {
+    setLoadingDecks(true)
+    try {
+      const response = await fetch('/api/decks')
+      if (!response.ok) throw new Error('Failed to fetch decks')
+      const data = await response.json()
+      setDecks(data)
+    } catch (error) {
+      console.error('Error fetching decks:', error)
+      toast.error('Failed to load decks')
+    } finally {
+      setLoadingDecks(false)
+    }
+  }
 
   useEffect(() => {
-    if (card) {
+    if (open && card) {
       setFront(card.front)
       setBack(card.back)
+      setCurrentDeckId(card.deckId || '')
+      setSelectedDeckId(card.deckId || '')
+      fetchDecks()
     }
-  }, [card])
+  }, [open, card])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,17 +70,28 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess }: EditCard
     setLoading(true)
 
     try {
+      const payload: { front: string; back: string; deckId?: string } = {
+        front,
+        back
+      }
+
+      // Only include deckId if it changed
+      if (selectedDeckId && selectedDeckId !== currentDeckId) {
+        payload.deckId = selectedDeckId
+      }
+
       const response = await fetch(`/api/cards/${card.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ front, back })
+        body: JSON.stringify(payload)
       })
 
       if (!response.ok) {
         throw new Error('Failed to update card')
       }
 
-      toast.success('Card updated')
+      const message = payload.deckId ? 'Card updated and moved' : 'Card updated'
+      toast.success(message)
       onOpenChange(false)
       onSuccess()
     } catch (error) {
@@ -72,6 +113,33 @@ export function EditCardDialog({ card, open, onOpenChange, onSuccess }: EditCard
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-2">
+            <div className="space-y-2 pt-2">
+              <Label htmlFor="deck-select" className="text-base font-semibold">
+                Deck
+              </Label>
+              {loadingDecks ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Loading decks...</span>
+                </div>
+              ) : decks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No decks available</p>
+              ) : (
+                <Select value={selectedDeckId} onValueChange={setSelectedDeckId}>
+                  <SelectTrigger className="text-base">
+                    <SelectValue placeholder="Select a deck" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {decks.map((deck) => (
+                      <SelectItem key={deck.id} value={deck.id}>
+                        {deck.name}
+                        {deck.id === currentDeckId && " (current)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <Label htmlFor="edit-front" className="text-base font-semibold">Front</Label>
