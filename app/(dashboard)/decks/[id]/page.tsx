@@ -489,7 +489,7 @@ export default function DeckDetailPage() {
       />
 
       <EditCardDialog
-        card={selectedCard}
+        card={selectedCard ? { ...selectedCard, deckId: id } : null}
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSuccess={fetchDeck}
