@@ -3,14 +3,21 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, ArrowLeft, Play, X, Pencil, Loader2, Library } from 'lucide-react'
+import { Plus, ArrowLeft, Play, X, Pencil, Loader2, Library, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { AddDeckToCollectionDialog } from '@/components/add-deck-to-collection-dialog'
+import { CreateDeckFromCollectionDialog } from '@/components/create-deck-from-collection-dialog'
 import { toast } from 'sonner'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { cn } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Deck {
     id: string
@@ -35,6 +42,7 @@ export default function CollectionDetailsPage() {
     const [collection, setCollection] = useState<Collection | null>(null)
     const [loading, setLoading] = useState(true)
     const [addDeckDialogOpen, setAddDeckDialogOpen] = useState(false)
+    const [createDeckDialogOpen, setCreateDeckDialogOpen] = useState(false)
     const [deleteDeckDialogOpen, setDeleteDeckDialogOpen] = useState(false)
     const [selectedDeckToRemove, setSelectedDeckToRemove] = useState<Deck | null>(null)
     const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -343,10 +351,25 @@ export default function CollectionDetailsPage() {
                         </div>
                     )}
                 </div>
-                <Button onClick={() => setAddDeckDialogOpen(true)} size="lg" className="shrink-0 shadow-sm">
-                    <Plus className="mr-2 h-5 w-5" />
-                    Add Deck
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                    <Button onClick={() => setAddDeckDialogOpen(true)} size="lg" className="shadow-sm">
+                        <Plus className="mr-2 h-5 w-5" />
+                        Add Deck
+                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-10 w-10">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setCreateDeckDialogOpen(true)}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create New Deck
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
 
             {collection.decks.length === 0 ? (
@@ -432,6 +455,13 @@ export default function CollectionDetailsPage() {
                 onOpenChange={setAddDeckDialogOpen}
                 collectionId={collection.id}
                 existingDeckIds={collection.decks.map(d => d.id)}
+                onSuccess={fetchCollection}
+            />
+
+            <CreateDeckFromCollectionDialog
+                open={createDeckDialogOpen}
+                onOpenChange={setCreateDeckDialogOpen}
+                collectionId={collection.id}
                 onSuccess={fetchCollection}
             />
 
