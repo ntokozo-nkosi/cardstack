@@ -199,11 +199,33 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Delete deck with optimistic update
   deleteDeck: async (id) => {
-    const originalDecks = get().decks
+    const {
+      decks: originalDecks,
+      collections: originalCollections,
+      collectionDecks: originalCollectionDecks
+    } = get()
 
-    // Optimistic delete
+    // Find which collections have this deck in their cache to update their counts
+    const collectionsToUpdate = Object.entries(originalCollectionDecks)
+      .filter(([_, decks]) => decks.some((d) => d.id === id))
+      .map(([collectionId]) => collectionId)
+
+    // Optimistic delete across all relevant state slices
     set((state) => ({
       decks: state.decks.filter((d) => d.id !== id),
+      // Update deck counts for affected collections
+      collections: state.collections.map((c) =>
+        collectionsToUpdate.includes(c.id)
+          ? { ...c, _count: { ...c._count, decks: Math.max(0, c._count.decks - 1) } }
+          : c
+      ),
+      // Remove deck from all cached collection maps
+      collectionDecks: Object.fromEntries(
+        Object.entries(state.collectionDecks).map(([collId, collDecks]) => [
+          collId,
+          collDecks.filter((d) => d.id !== id),
+        ])
+      ),
     }))
 
     try {
@@ -214,8 +236,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (!response.ok) throw new Error('Failed to delete deck')
       return true
     } catch (error) {
-      // Rollback
-      set({ decks: originalDecks })
+      // Rollback all affected state slices
+      set({
+        decks: originalDecks,
+        collections: originalCollections,
+        collectionDecks: originalCollectionDecks,
+      })
       return false
     }
   },
