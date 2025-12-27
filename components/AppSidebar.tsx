@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Layers, FolderOpen, SquareStack } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, ChevronDown, Layers, FolderOpen, SquareStack, Bot, Plus } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -13,10 +14,14 @@ import {
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { ChatList } from "@/components/chat/chat-list";
 
 import { UserButton, useUser } from "@clerk/nextjs";
 import { SidebarFooter } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
+import { cn } from "@/lib/utils";
 
 
 
@@ -26,9 +31,11 @@ export function AppSidebar() {
   const { toggleSidebar, state } = useSidebar();
   const { user, isLoaded } = useUser();
   const isCollapsed = state === "collapsed";
+  const [chatOpen, setChatOpen] = useState(true);
 
   const isDecksActive = pathname?.startsWith('/decks') || pathname === '/' || false;
   const isFlashcardsActive = pathname?.startsWith('/flashcards') || false;
+  const isChatActive = pathname?.startsWith('/chat') || false;
 
   return (
     <>
@@ -47,6 +54,53 @@ export function AppSidebar() {
           <SidebarGroup className="px-3 py-4 group-data-[collapsible=icon]:px-2">
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
+                {/* AI Chat Section */}
+                <SidebarMenuItem>
+                  <Collapsible open={chatOpen && !isCollapsed} onOpenChange={setChatOpen}>
+                    <div className="flex items-center">
+                      <SidebarMenuButton
+                        onClick={() => router.push('/chat')}
+                        isActive={isChatActive}
+                        className="flex-1 px-3 py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-primary rounded-lg transition-colors"
+                        tooltip="AI Chat"
+                      >
+                        <Bot size={16} className="shrink-0" />
+                        <span className="text-sm group-data-[collapsible=icon]:hidden">AI Chat</span>
+                      </SidebarMenuButton>
+
+                      {/* New chat button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 group-data-[collapsible=icon]:hidden"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push('/chat');
+                        }}
+                        title="New chat"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+
+                      {/* Collapse toggle */}
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 group-data-[collapsible=icon]:hidden"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ChevronDown className={cn("h-4 w-4 transition-transform", chatOpen && "rotate-180")} />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+
+                    <CollapsibleContent>
+                      <ChatList limit={5} />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => router.push('/flashcards')}
