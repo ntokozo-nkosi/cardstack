@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { SendHorizonal } from 'lucide-react'
+import { ArrowUp } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ChatInputProps {
   onSend: (content: string) => Promise<void>
@@ -14,7 +13,7 @@ interface ChatInputProps {
 export function ChatInput({
   onSend,
   disabled,
-  placeholder = 'Type a message...',
+  placeholder = 'Message...',
 }: ChatInputProps) {
   const [input, setInput] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -50,27 +49,33 @@ export function ChatInput({
   }
 
   const isDisabled = disabled || isSending
+  const canSend = input.trim() && !isDisabled
 
   return (
-    <div className="flex items-end gap-2">
-      <Textarea
+    <div className="relative flex items-end rounded-2xl border bg-background shadow-sm">
+      <textarea
         ref={textareaRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={isDisabled}
-        className="min-h-[44px] max-h-[200px] resize-none"
+        className="flex-1 resize-none bg-transparent px-4 py-3 pr-12 text-base placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
         rows={1}
+        style={{ minHeight: '48px', maxHeight: '200px' }}
       />
-      <Button
+      <button
         onClick={handleSubmit}
-        disabled={!input.trim() || isDisabled}
-        size="icon"
-        className="h-11 w-11 shrink-0"
+        disabled={!canSend}
+        className={cn(
+          'absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full transition-colors',
+          canSend
+            ? 'bg-foreground text-background hover:bg-foreground/90'
+            : 'bg-muted text-muted-foreground'
+        )}
       >
-        <SendHorizonal className="h-5 w-5" />
-      </Button>
+        <ArrowUp className="h-4 w-4" />
+      </button>
     </div>
   )
 }

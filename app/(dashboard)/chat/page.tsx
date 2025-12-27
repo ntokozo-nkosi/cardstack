@@ -3,15 +3,18 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useChatStore } from '@/lib/stores/chat-store'
+import { useSidebar } from '@/components/ui/sidebar'
 import { ChatInput } from '@/components/chat/chat-input'
-import { MessageSquarePlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function NewChatPage() {
   const router = useRouter()
   const createChat = useChatStore((state) => state.createChat)
   const sendMessage = useChatStore((state) => state.sendMessage)
+  const { state: sidebarState, isMobile } = useSidebar()
   const [isCreating, setIsCreating] = useState(false)
+
+  const isCollapsed = sidebarState === 'collapsed'
 
   const handleSend = async (content: string) => {
     setIsCreating(true)
@@ -42,24 +45,22 @@ export default function NewChatPage() {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Empty state with centered prompt */}
-      <div className="flex flex-1 items-center justify-center">
+    <div className="relative h-full">
+      {/* Empty state */}
+      <div className="flex h-full items-center justify-center pb-32">
         <div className="mx-auto max-w-md px-4 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted/50">
-            <MessageSquarePlus className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h2 className="mb-2 text-xl font-semibold">Start a new conversation</h2>
-          <p className="text-muted-foreground">
-            Ask me anything about your flashcards, learning strategies, or any topic
-            you&apos;d like to explore.
-          </p>
+          <h2 className="text-2xl font-medium text-foreground/80">What can I help with?</h2>
         </div>
       </div>
 
-      {/* Input fixed at bottom */}
-      <div className="border-t bg-background p-4">
-        <div className="mx-auto max-w-3xl">
+      {/* Fixed input at bottom - responsive to sidebar */}
+      <div
+        className="pointer-events-none fixed bottom-0 right-0 px-4 pb-4 transition-[left] duration-200 ease-linear"
+        style={{
+          left: isMobile ? 0 : isCollapsed ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)'
+        }}
+      >
+        <div className="pointer-events-auto mx-auto max-w-2xl">
           <ChatInput onSend={handleSend} disabled={isCreating} />
         </div>
       </div>
