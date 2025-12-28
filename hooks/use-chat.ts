@@ -21,5 +21,10 @@ export function useChat(chatId: string) {
   // Return the chat only if it matches the requested ID
   const chat = currentChat?.id === chatId ? currentChat : null
 
-  return { chat, isLoading }
+  // Consider it loading if:
+  // 1. Actually loading, OR
+  // 2. We have a different chat (transitioning between chats)
+  const loading = isLoading || (currentChat !== null && chat === null)
+
+  return { chat, isLoading: loading }
 }

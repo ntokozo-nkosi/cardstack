@@ -9,24 +9,18 @@ import {
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar'
 
-interface ChatListProps {
-  limit?: number
-}
-
-export function ChatList({ limit = 5 }: ChatListProps) {
+export function ChatList() {
   const { chats, isLoading } = useChats()
   const pathname = usePathname()
   const router = useRouter()
 
-  const recentChats = chats.slice(0, limit)
-
-  if (isLoading || recentChats.length === 0) {
+  if (isLoading || chats.length === 0) {
     return null
   }
 
   return (
     <SidebarMenuSub>
-      {recentChats.map((chat) => (
+      {chats.map((chat) => (
         <SidebarMenuSubItem key={chat.id}>
           <SidebarMenuSubButton
             onClick={() => router.push(`/chat/${chat.id}`)}

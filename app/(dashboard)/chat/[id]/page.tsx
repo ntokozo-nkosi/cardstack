@@ -22,14 +22,20 @@ export default function ChatPage() {
   const chatId = params.id as string
   const { chat, isLoading } = useChat(chatId)
 
+  // Redirect if chat doesn't exist (in effect to avoid render-time navigation)
+  useEffect(() => {
+    if (!isLoading && !chat) {
+      router.push('/chat')
+    }
+  }, [isLoading, chat, router])
+
   // Show loading skeleton while fetching
   if (isLoading) {
     return <ChatSkeleton />
   }
 
-  // Redirect if chat doesn't exist
+  // Show nothing while redirecting
   if (!chat) {
-    router.push('/chat')
     return null
   }
 

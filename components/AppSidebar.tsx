@@ -96,7 +96,7 @@ export function AppSidebar() {
                     </div>
 
                     <CollapsibleContent>
-                      <ChatList limit={5} />
+                      <ChatList />
                     </CollapsibleContent>
                   </Collapsible>
                 </SidebarMenuItem>
