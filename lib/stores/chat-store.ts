@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Chat, ChatWithMessages } from '@/lib/types/chat'
+import type { Chat, ChatWithMessages, Message } from '@/lib/types/chat'
 
 interface ChatState {
   // Chat list state
@@ -12,6 +12,9 @@ interface ChatState {
   currentChat: ChatWithMessages | null
   currentChatLoading: boolean
 
+  // Message sending state
+  isSendingMessage: boolean
+
   // Chat list actions
   fetchChats: () => Promise<void>
   ensureChatsLoaded: () => Promise<void>
@@ -22,6 +25,9 @@ interface ChatState {
   // Current chat actions
   fetchChat: (id: string) => Promise<void>
   setCurrentChat: (chat: ChatWithMessages | null) => void
+
+  // Message actions
+  sendMessage: (chatId: string, content: string) => Promise<boolean>
 
   // Utility actions
   reset: () => void
@@ -34,6 +40,7 @@ const initialState = {
   chatsError: null as string | null,
   currentChat: null as ChatWithMessages | null,
   currentChatLoading: false,
+  isSendingMessage: false,
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -165,6 +172,88 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // Set current chat directly (for optimistic updates)
   setCurrentChat: (chat: ChatWithMessages | null) => {
     set({ currentChat: chat })
+  },
+
+  // Send message to chat
+  sendMessage: async (chatId: string, content: string) => {
+    const { currentChat } = get()
+
+    if (!currentChat || currentChat.id !== chatId) {
+      return false
+    }
+
+    set({ isSendingMessage: true })
+
+    // Create optimistic user message
+    const optimisticUserMessage: Message = {
+      id: crypto.randomUUID(),
+      chatId,
+      role: 'user',
+      content,
+      createdAt: new Date().toISOString(),
+    }
+
+    // Create temporary loading message for AI
+    const loadingAiMessage: Message = {
+      id: 'loading-' + crypto.randomUUID(),
+      chatId,
+      role: 'assistant',
+      content: '',
+      createdAt: new Date().toISOString(),
+    }
+
+    // Optimistically update UI
+    const previousChat = currentChat
+    set({
+      currentChat: {
+        ...currentChat,
+        messages: [...currentChat.messages, optimisticUserMessage, loadingAiMessage],
+      },
+    })
+
+    try {
+      const response = await fetch(`/api/chat/${chatId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      const data = await response.json()
+
+      // Replace optimistic messages with real ones
+      set((state) => {
+        if (!state.currentChat || state.currentChat.id !== chatId) {
+          return state
+        }
+
+        return {
+          currentChat: {
+            ...state.currentChat,
+            messages: [
+              ...state.currentChat.messages.filter(
+                (m) => m.id !== optimisticUserMessage.id && m.id !== loadingAiMessage.id
+              ),
+              data.userMessage,
+              data.assistantMessage,
+            ],
+          },
+          isSendingMessage: false,
+        }
+      })
+
+      return true
+    } catch (error) {
+      // Rollback on error
+      set({
+        currentChat: previousChat,
+        isSendingMessage: false,
+      })
+      return false
+    }
   },
 
   // Reset store to initial state

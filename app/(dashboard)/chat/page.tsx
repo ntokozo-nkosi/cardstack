@@ -5,11 +5,13 @@ import { useChatStore } from '@/lib/stores/chat-store'
 import { useSidebar } from '@/components/ui/sidebar'
 import { ChatInput } from '@/components/chat/chat-input'
 import { toast } from 'sonner'
+import type { Message } from '@/lib/types/chat'
 
 export default function NewChatPage() {
   const router = useRouter()
   const createChat = useChatStore((state) => state.createChat)
   const setCurrentChat = useChatStore((state) => state.setCurrentChat)
+  const sendMessage = useChatStore((state) => state.sendMessage)
   const { state: sidebarState, isMobile } = useSidebar()
 
   const isCollapsed = sidebarState === 'collapsed'
@@ -19,22 +21,75 @@ export default function NewChatPage() {
     const chatId = crypto.randomUUID()
     const title = content.slice(0, 50) || 'New Chat'
 
-    // Set optimistic chat for instant display
+    // Create optimistic messages for immediate display
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      chatId,
+      role: 'user',
+      content,
+      createdAt: new Date().toISOString(),
+    }
+
+    const loadingMessage: Message = {
+      id: 'loading-' + crypto.randomUUID(),
+      chatId,
+      role: 'assistant',
+      content: '',
+      createdAt: new Date().toISOString(),
+    }
+
+    // Set optimistic chat with messages visible immediately
     setCurrentChat({
       id: chatId,
       title,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      messages: [],
+      messages: [userMessage, loadingMessage],
     })
 
     // Navigate immediately
     router.push(`/chat/${chatId}`)
 
-    // Create on server in background
-    createChat(chatId, title).catch(() => {
+    // Create chat on server
+    const chat = await createChat(chatId, title)
+    if (!chat) {
       toast.error('Failed to create chat')
-    })
+      return
+    }
+
+    // Send the first message and get AI response
+    try {
+      const response = await fetch(`/api/chat/${chatId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      const data = await response.json()
+
+      // Replace optimistic messages with real ones
+      setCurrentChat({
+        id: chatId,
+        title,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [data.userMessage, data.assistantMessage],
+      })
+    } catch (error) {
+      toast.error('Failed to send message')
+      // Remove loading message on error, keep user message
+      setCurrentChat({
+        id: chatId,
+        title,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [userMessage],
+      })
+    }
   }
 
   return (
