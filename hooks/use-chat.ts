@@ -4,32 +4,22 @@ import { useEffect } from 'react'
 import { useChatStore } from '@/lib/stores/chat-store'
 
 /**
- * Hook for accessing a specific chat with messages.
- * Automatically fetches the chat on mount.
+ * Hook to access a specific chat.
+ * Automatically fetches from server if not in store.
  */
-export function useChat(chatId: string | null) {
+export function useChat(chatId: string) {
   const currentChat = useChatStore((state) => state.currentChat)
-  const currentChatLoading = useChatStore((state) => state.currentChatLoading)
-  const pendingMessage = useChatStore((state) => state.pendingMessage)
-  const isWaitingForAI = useChatStore((state) => state.isWaitingForAI)
+  const isLoading = useChatStore((state) => state.currentChatLoading)
   const fetchChat = useChatStore((state) => state.fetchChat)
-  const clearCurrentChat = useChatStore((state) => state.clearCurrentChat)
 
   useEffect(() => {
     if (chatId) {
       fetchChat(chatId)
     }
+  }, [chatId, fetchChat])
 
-    // Clear current chat when unmounting
-    return () => {
-      clearCurrentChat()
-    }
-  }, [chatId, fetchChat, clearCurrentChat])
+  // Return the chat only if it matches the requested ID
+  const chat = currentChat?.id === chatId ? currentChat : null
 
-  return {
-    chat: currentChat,
-    isLoading: currentChatLoading,
-    pendingMessage,
-    isWaitingForAI,
-  }
+  return { chat, isLoading }
 }

@@ -1,11 +1,11 @@
 /**
  * Server-side in-memory storage for chat conversations.
- * Data is stored per-user and persists only until server restart.
+ * Data is stored per-user and cleared on server restart.
  *
  * Structure: userId -> chatId -> ChatWithMessages
  */
 
-import type { Chat, ChatWithMessages, Message } from '@/lib/types/chat'
+import type { Chat, ChatWithMessages } from '@/lib/types/chat'
 
 // In-memory store: userId -> Map<chatId, ChatWithMessages>
 const chatStore = new Map<string, Map<string, ChatWithMessages>>()
@@ -47,12 +47,12 @@ export function getChat(userId: string, chatId: string): ChatWithMessages | null
 /**
  * Create a new chat
  */
-export function createChat(userId: string, title?: string): ChatWithMessages {
+export function createChat(userId: string, id?: string, title?: string): ChatWithMessages {
   const userChats = getUserChatMap(userId)
   const now = new Date().toISOString()
 
   const chat: ChatWithMessages = {
-    id: generateId(),
+    id: id || generateId(),
     title: title || 'New Chat',
     createdAt: now,
     updatedAt: now,
@@ -61,41 +61,6 @@ export function createChat(userId: string, title?: string): ChatWithMessages {
 
   userChats.set(chat.id, chat)
   return chat
-}
-
-/**
- * Add a message to a chat
- */
-export function addMessage(
-  userId: string,
-  chatId: string,
-  role: 'user' | 'assistant',
-  content: string
-): Message | null {
-  const userChats = getUserChatMap(userId)
-  const chat = userChats.get(chatId)
-
-  if (!chat) return null
-
-  const now = new Date().toISOString()
-
-  const message: Message = {
-    id: generateId(),
-    chatId,
-    role,
-    content,
-    createdAt: now,
-  }
-
-  chat.messages.push(message)
-  chat.updatedAt = now
-
-  // Auto-update title from first user message if title is still default
-  if (chat.title === 'New Chat' && role === 'user' && chat.messages.length === 1) {
-    chat.title = content.slice(0, 50) + (content.length > 50 ? '...' : '')
-  }
-
-  return message
 }
 
 /**

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const chat = createChat(user.id, body.title)
+    const chat = createChat(user.id, body.id, body.title)
 
     // Return without messages for list view
     const { messages, ...chatSummary } = chat

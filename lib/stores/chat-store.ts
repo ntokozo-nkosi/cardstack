@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Chat, ChatWithMessages, Message } from '@/lib/types/chat'
+import type { Chat, ChatWithMessages } from '@/lib/types/chat'
 
 interface ChatState {
   // Chat list state
@@ -8,26 +8,20 @@ interface ChatState {
   chatsLoading: boolean
   chatsError: string | null
 
-  // Current chat state (for detail view)
+  // Current chat state
   currentChat: ChatWithMessages | null
   currentChatLoading: boolean
-
-  // Pending message state (for optimistic UI)
-  pendingMessage: string | null
-  isWaitingForAI: boolean
 
   // Chat list actions
   fetchChats: () => Promise<void>
   ensureChatsLoaded: () => Promise<void>
-  createChat: (title?: string) => Promise<Chat | null>
+  createChat: (id?: string, title?: string) => Promise<Chat | null>
   deleteChat: (id: string) => Promise<boolean>
   updateChatTitle: (id: string, title: string) => Promise<boolean>
 
   // Current chat actions
   fetchChat: (id: string) => Promise<void>
   setCurrentChat: (chat: ChatWithMessages | null) => void
-  sendMessage: (chatId: string, content: string) => Promise<{ userMessage: Message; assistantMessage: Message } | null>
-  clearCurrentChat: () => void
 
   // Utility actions
   reset: () => void
@@ -40,8 +34,6 @@ const initialState = {
   chatsError: null as string | null,
   currentChat: null as ChatWithMessages | null,
   currentChatLoading: false,
-  pendingMessage: null as string | null,
-  isWaitingForAI: false,
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -75,19 +67,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Create a new chat
-  createChat: async (title?: string) => {
+  createChat: async (id?: string, title?: string) => {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ id, title }),
       })
 
-      if (!response.ok) throw new Error('Failed to create chat')
+      if (!response.ok) {
+        throw new Error('Failed to create chat')
+      }
 
       const newChat = await response.json()
 
-      // Add to list
+      // Add to chat list
       set((state) => ({
         chats: [newChat, ...state.chats],
       }))
@@ -148,11 +142,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // Fetch a specific chat with messages
   fetchChat: async (id: string) => {
+    const { currentChat } = get()
+
+    // Skip if we already have this chat
+    if (currentChat && currentChat.id === id) {
+      return
+    }
+
     set({ currentChatLoading: true })
 
     try {
       const response = await fetch(`/api/chat/${id}`)
       if (!response.ok) throw new Error('Failed to fetch chat')
+
       const chat = await response.json()
       set({ currentChat: chat, currentChatLoading: false })
     } catch {
@@ -160,64 +162,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  // Set current chat directly
+  // Set current chat directly (for optimistic updates)
   setCurrentChat: (chat: ChatWithMessages | null) => {
     set({ currentChat: chat })
-  },
-
-  // Clear current chat
-  clearCurrentChat: () => {
-    set({ currentChat: null, pendingMessage: null, isWaitingForAI: false })
-  },
-
-  // Send a message and get AI response
-  sendMessage: async (chatId: string, content: string) => {
-    const { currentChat } = get()
-
-    // Set pending state for optimistic UI
-    set({ pendingMessage: content, isWaitingForAI: true })
-
-    try {
-      const response = await fetch(`/api/chat/${chatId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      })
-
-      if (!response.ok) throw new Error('Failed to send message')
-
-      const { userMessage, assistantMessage } = await response.json()
-
-      // Update current chat with new messages
-      if (currentChat && currentChat.id === chatId) {
-        set((state) => ({
-          currentChat: state.currentChat
-            ? {
-                ...state.currentChat,
-                messages: [...state.currentChat.messages, userMessage, assistantMessage],
-                updatedAt: new Date().toISOString(),
-              }
-            : null,
-          pendingMessage: null,
-          isWaitingForAI: false,
-        }))
-      } else {
-        set({ pendingMessage: null, isWaitingForAI: false })
-      }
-
-      // Update chat title in list if it was auto-generated
-      const updatedChat = await fetch(`/api/chat/${chatId}`).then((r) => r.json())
-      set((state) => ({
-        chats: state.chats.map((c) =>
-          c.id === chatId ? { ...c, title: updatedChat.title, updatedAt: updatedChat.updatedAt } : c
-        ),
-      }))
-
-      return { userMessage, assistantMessage }
-    } catch {
-      set({ pendingMessage: null, isWaitingForAI: false })
-      return null
-    }
   },
 
   // Reset store to initial state

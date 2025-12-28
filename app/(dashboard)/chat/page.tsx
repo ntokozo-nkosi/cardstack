@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useChatStore } from '@/lib/stores/chat-store'
 import { useSidebar } from '@/components/ui/sidebar'
@@ -10,38 +9,32 @@ import { toast } from 'sonner'
 export default function NewChatPage() {
   const router = useRouter()
   const createChat = useChatStore((state) => state.createChat)
-  const sendMessage = useChatStore((state) => state.sendMessage)
+  const setCurrentChat = useChatStore((state) => state.setCurrentChat)
   const { state: sidebarState, isMobile } = useSidebar()
-  const [isCreating, setIsCreating] = useState(false)
 
   const isCollapsed = sidebarState === 'collapsed'
 
   const handleSend = async (content: string) => {
-    setIsCreating(true)
+    // Generate chat ID
+    const chatId = crypto.randomUUID()
+    const title = content.slice(0, 50) || 'New Chat'
 
-    try {
-      // Create new chat
-      const chat = await createChat()
-      if (!chat) {
-        toast.error('Failed to create chat')
-        setIsCreating(false)
-        return
-      }
+    // Set optimistic chat for instant display
+    setCurrentChat({
+      id: chatId,
+      title,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: [],
+    })
 
-      // Send first message
-      const result = await sendMessage(chat.id, content)
-      if (!result) {
-        toast.error('Failed to send message')
-        setIsCreating(false)
-        return
-      }
+    // Navigate immediately
+    router.push(`/chat/${chatId}`)
 
-      // Navigate to chat page
-      router.push(`/chat/${chat.id}`)
-    } catch {
-      toast.error('Something went wrong')
-      setIsCreating(false)
-    }
+    // Create on server in background
+    createChat(chatId, title).catch(() => {
+      toast.error('Failed to create chat')
+    })
   }
 
   return (
@@ -61,7 +54,7 @@ export default function NewChatPage() {
         }}
       >
         <div className="pointer-events-auto mx-auto max-w-2xl">
-          <ChatInput onSend={handleSend} disabled={isCreating} />
+          <ChatInput onSend={handleSend} />
         </div>
       </div>
     </div>
