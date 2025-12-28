@@ -17,11 +17,10 @@ export default function NewChatPage() {
   const isCollapsed = sidebarState === 'collapsed'
 
   const handleSend = async (content: string) => {
-    // Generate chat ID
     const chatId = crypto.randomUUID()
     const title = content.slice(0, 50) || 'New Chat'
 
-    // Create optimistic messages for immediate display
+    // Optimistic update: create messages before navigation so they're visible immediately
     const userMessage: Message = {
       id: crypto.randomUUID(),
       chatId,
@@ -38,7 +37,6 @@ export default function NewChatPage() {
       createdAt: new Date().toISOString(),
     }
 
-    // Set optimistic chat with messages visible immediately
     setCurrentChat({
       id: chatId,
       title,
@@ -47,17 +45,17 @@ export default function NewChatPage() {
       messages: [userMessage, loadingMessage],
     })
 
-    // Navigate immediately
+    // Navigate immediately - user sees their message right away
     router.push(`/chat/${chatId}`)
 
-    // Create chat on server
+    // Create chat on server in background
     const chat = await createChat(chatId, title)
     if (!chat) {
       toast.error('Failed to create chat')
       return
     }
 
-    // Send the first message and get AI response
+    // Send message and get AI response
     try {
       const response = await fetch(`/api/chat/${chatId}/messages`, {
         method: 'POST',
@@ -71,7 +69,7 @@ export default function NewChatPage() {
 
       const data = await response.json()
 
-      // Replace optimistic messages with real ones
+      // Replace optimistic messages with real ones from server
       setCurrentChat({
         id: chatId,
         title,
@@ -81,7 +79,7 @@ export default function NewChatPage() {
       })
     } catch (error) {
       toast.error('Failed to send message')
-      // Remove loading message on error, keep user message
+      // Keep user message visible but remove loading state
       setCurrentChat({
         id: chatId,
         title,

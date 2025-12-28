@@ -184,7 +184,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     set({ isSendingMessage: true })
 
-    // Create optimistic user message
+    // Optimistic update: show user message immediately with temp ID
     const optimisticUserMessage: Message = {
       id: crypto.randomUUID(),
       chatId,
@@ -193,7 +193,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       createdAt: new Date().toISOString(),
     }
 
-    // Create temporary loading message for AI
+    // Loading state: temporary message with 'loading-' prefix for detection
     const loadingAiMessage: Message = {
       id: 'loading-' + crypto.randomUUID(),
       chatId,
@@ -202,7 +202,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       createdAt: new Date().toISOString(),
     }
 
-    // Optimistically update UI
+    // Save current state for rollback if request fails
     const previousChat = currentChat
     set({
       currentChat: {
@@ -224,7 +224,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       const data = await response.json()
 
-      // Replace optimistic messages with real ones
+      // Replace optimistic messages with real ones from server (proper IDs)
       set((state) => {
         if (!state.currentChat || state.currentChat.id !== chatId) {
           return state
@@ -247,7 +247,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       return true
     } catch (error) {
-      // Rollback on error
+      // Rollback to previous state on failure
       set({
         currentChat: previousChat,
         isSendingMessage: false,
