@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Layers, FolderOpen, SquareStack, Bot, Plus } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -31,11 +31,18 @@ export function AppSidebar() {
   const { toggleSidebar, state } = useSidebar();
   const { user, isLoaded } = useUser();
   const isCollapsed = state === "collapsed";
-  const [chatOpen, setChatOpen] = useState(true);
 
   const isDecksActive = pathname?.startsWith('/decks') || pathname === '/' || false;
   const isFlashcardsActive = pathname?.startsWith('/flashcards') || false;
   const isChatActive = pathname?.startsWith('/chat') || false;
+
+  // Only expand chat section if we're on a chat page
+  const [chatOpen, setChatOpen] = useState(isChatActive);
+
+  // Auto-expand/collapse based on current page
+  useEffect(() => {
+    setChatOpen(isChatActive);
+  }, [isChatActive]);
 
   return (
     <>

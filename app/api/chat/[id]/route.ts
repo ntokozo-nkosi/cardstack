@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUserDb } from '@/lib/auth-helpers'
-import { getChat, updateChatTitle, deleteChat } from '@/lib/stores/chat-memory-store'
+import { query } from '@/lib/database'
 
 type RouteParams = { params: Promise<{ id: string }> }
 
@@ -14,13 +14,20 @@ export async function GET(request: Request, { params }: RouteParams) {
   }
 
   const { id } = await params
-  const chat = getChat(user.id, id)
 
-  if (!chat) {
-    return new NextResponse('Chat not found', { status: 404 })
+  try {
+    const result = await query('SELECT get_chat_by_id($1, $2) as chat', [id, user.id])
+    const chat = result.rows[0]?.chat
+
+    if (!chat) {
+      return new NextResponse('Chat not found', { status: 404 })
+    }
+
+    return NextResponse.json(chat)
+  } catch (error) {
+    console.error('Error fetching chat:', error)
+    return new NextResponse('Internal Server Error', { status: 500 })
   }
-
-  return NextResponse.json(chat)
 }
 
 /**
@@ -42,14 +49,16 @@ export async function PUT(request: Request, { params }: RouteParams) {
       return new NextResponse('Title is required', { status: 400 })
     }
 
-    const success = updateChatTitle(user.id, id, title)
+    const result = await query('SELECT update_chat_title($1, $2, $3) as success', [id, user.id, title])
+    const success = result.rows[0]?.success
 
     if (!success) {
       return new NextResponse('Chat not found', { status: 404 })
     }
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
+    console.error('Error updating chat:', error)
     return new NextResponse('Bad request', { status: 400 })
   }
 }
@@ -64,11 +73,18 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   }
 
   const { id } = await params
-  const success = deleteChat(user.id, id)
 
-  if (!success) {
-    return new NextResponse('Chat not found', { status: 404 })
+  try {
+    const result = await query('SELECT delete_chat_if_owned($1, $2) as success', [id, user.id])
+    const success = result.rows[0]?.success
+
+    if (!success) {
+      return new NextResponse('Chat not found', { status: 404 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting chat:', error)
+    return new NextResponse('Internal Server Error', { status: 500 })
   }
-
-  return NextResponse.json({ success: true })
 }

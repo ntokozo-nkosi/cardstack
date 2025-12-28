@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUserDb } from '@/lib/auth-helpers'
-import { getUserChats, createChat } from '@/lib/stores/chat-memory-store'
+import { query } from '@/lib/database'
 
 /**
  * GET /api/chat - List all chats for the current user
@@ -11,8 +11,14 @@ export async function GET() {
     return new NextResponse('Unauthorized', { status: 401 })
   }
 
-  const chats = getUserChats(user.id)
-  return NextResponse.json(chats)
+  try {
+    const result = await query('SELECT get_user_chats($1) as chats', [user.id])
+    const chats = result.rows[0]?.chats || []
+    return NextResponse.json(chats)
+  } catch (error) {
+    console.error('Error fetching chats:', error)
+    return new NextResponse('Internal Server Error', { status: 500 })
+  }
 }
 
 /**
@@ -26,12 +32,18 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const chat = createChat(user.id, body.id, body.title)
+    const title = body.title || 'New Chat'
+    const id = body.id || null // Optional client-provided UUID
 
-    // Return without messages for list view
-    const { messages, ...chatSummary } = chat
-    return NextResponse.json(chatSummary, { status: 201 })
-  } catch {
+    const result = await query(
+      'SELECT create_chat($1, $2, $3) as chat',
+      [id, user.id, title]
+    )
+
+    const chat = result.rows[0]?.chat
+    return NextResponse.json(chat, { status: 201 })
+  } catch (error) {
+    console.error('Error creating chat:', error)
     return new NextResponse('Bad request', { status: 400 })
   }
 }
