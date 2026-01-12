@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useChatStore } from '@/lib/stores/chat-store'
+import { useAppStore } from '@/lib/stores/app-store'
 import { useSidebar } from '@/components/ui/sidebar'
 import { ChatInput } from '@/components/chat/chat-input'
 import { toast } from 'sonner'
@@ -11,7 +12,6 @@ export default function NewChatPage() {
   const router = useRouter()
   const createChat = useChatStore((state) => state.createChat)
   const setCurrentChat = useChatStore((state) => state.setCurrentChat)
-  const sendMessage = useChatStore((state) => state.sendMessage)
   const { state: sidebarState, isMobile } = useSidebar()
 
   const isCollapsed = sidebarState === 'collapsed'
@@ -77,6 +77,28 @@ export default function NewChatPage() {
         updatedAt: new Date().toISOString(),
         messages: [data.userMessage, data.assistantMessage],
       })
+
+      // Sync created entities to app store
+      if (data.createdEntities) {
+        const appStore = useAppStore.getState()
+
+        for (const deck of data.createdEntities.decks || []) {
+          appStore.insertDeck(deck)
+        }
+
+        for (const collection of data.createdEntities.collections || []) {
+          appStore.insertCollection(collection)
+        }
+
+        // Group cards by deck and update counts
+        const cardsByDeck = new Map<string, number>()
+        for (const card of data.createdEntities.cards || []) {
+          cardsByDeck.set(card.deckId, (cardsByDeck.get(card.deckId) || 0) + 1)
+        }
+        for (const [deckId, count] of cardsByDeck) {
+          appStore.incrementDeckCardCount(deckId, count)
+        }
+      }
     } catch (error) {
       toast.error('Failed to send message')
       // Keep user message visible but remove loading state

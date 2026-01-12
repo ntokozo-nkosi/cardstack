@@ -7,6 +7,36 @@ import { createToolsForUser, executeTool } from '@/lib/chat/tools'
 
 type RouteParams = { params: Promise<{ id: string }> }
 
+// Types for created entities returned to frontend for store sync
+interface CreatedEntities {
+  decks: Array<{ id: string; name: string; description: string | null }>
+  collections: Array<{ id: string; name: string; description: string | null }>
+  cards: Array<{ id: string; deckId: string; front: string; back: string }>
+}
+
+/**
+ * Parse tool results to extract created entities for frontend store sync
+ */
+function extractCreatedEntities(results: string[]): CreatedEntities {
+  const entities: CreatedEntities = { decks: [], collections: [], cards: [] }
+
+  for (const result of results) {
+    try {
+      const parsed = JSON.parse(result)
+      if (!parsed.success) continue
+
+      if (parsed.deck) entities.decks.push(parsed.deck)
+      if (parsed.collection) entities.collections.push(parsed.collection)
+      if (parsed.card) entities.cards.push(parsed.card)
+      if (parsed.cards) entities.cards.push(...parsed.cards)
+    } catch {
+      // Ignore non-JSON results (e.g., error messages, list outputs)
+    }
+  }
+
+  return entities
+}
+
 const SYSTEM_PROMPT = `You are a helpful assistant for managing flashcard collections and decks in CardStack.
 
 Your capabilities:
@@ -74,6 +104,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     // Tool execution loop (max 5 iterations to prevent infinite loops)
     let currentMessages = [...conversationHistory]
     let finalResponse = null
+    const allToolResults: string[] = []
 
     for (let i = 0; i < 5; i++) {
       const response = await modelWithTools.invoke(currentMessages)
@@ -90,6 +121,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       // Execute each tool call using the helper function
       for (const toolCall of response.tool_calls) {
         const result = await executeTool(tools, toolCall.name, toolCall.args as Record<string, unknown>)
+        allToolResults.push(result)
         currentMessages.push(new ToolMessage({
           tool_call_id: toolCall.id!,
           content: result
@@ -112,7 +144,13 @@ export async function POST(request: Request, { params }: RouteParams) {
       return new NextResponse('Failed to save messages', { status: 500 })
     }
 
-    return NextResponse.json(data, { status: 201 })
+    // Extract created entities from tool results for frontend store sync
+    const createdEntities = extractCreatedEntities(allToolResults)
+
+    return NextResponse.json({
+      ...data,
+      createdEntities
+    }, { status: 201 })
   } catch (error) {
     console.error('Error sending message:', error)
     return new NextResponse('Internal Server Error', { status: 500 })

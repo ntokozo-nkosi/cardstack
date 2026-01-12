@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Chat, ChatWithMessages, Message } from '@/lib/types/chat'
+import { useAppStore } from './app-store'
 
 interface ChatState {
   // Chat list state
@@ -244,6 +245,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
           isSendingMessage: false,
         }
       })
+
+      // Sync created entities to app store
+      if (data.createdEntities) {
+        const appStore = useAppStore.getState()
+
+        for (const deck of data.createdEntities.decks || []) {
+          appStore.insertDeck(deck)
+        }
+
+        for (const collection of data.createdEntities.collections || []) {
+          appStore.insertCollection(collection)
+        }
+
+        // Group cards by deck and update counts
+        const cardsByDeck = new Map<string, number>()
+        for (const card of data.createdEntities.cards || []) {
+          cardsByDeck.set(card.deckId, (cardsByDeck.get(card.deckId) || 0) + 1)
+        }
+        for (const [deckId, count] of cardsByDeck) {
+          appStore.incrementDeckCardCount(deckId, count)
+        }
+      }
 
       return true
     } catch (error) {
