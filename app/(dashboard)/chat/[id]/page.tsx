@@ -1,13 +1,14 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useChat } from '@/hooks/use-chat'
 import { useChatStore } from '@/lib/stores/chat-store'
 import { useSidebar } from '@/components/ui/sidebar'
 import { ChatInput } from '@/components/chat/chat-input'
 import { ChatMessage } from '@/components/chat/chat-message'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ArrowDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 function ChatSkeleton() {
@@ -30,12 +31,35 @@ export default function ChatPage() {
   const isSendingMessage = useChatStore((state) => state.isSendingMessage)
   const { state: sidebarState, isMobile } = useSidebar()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
 
   const isCollapsed = sidebarState === 'collapsed'
+
+  // Scroll to bottom handler
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chat?.messages])
+
+  // Use IntersectionObserver to detect when bottom is out of view
+  useEffect(() => {
+    const bottomEl = messagesEndRef.current
+    if (!bottomEl) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show button when bottom element is NOT visible
+        setShowScrollButton(!entry.isIntersecting)
+      },
+      { threshold: 0 }
+    )
+
+    observer.observe(bottomEl)
+    return () => observer.disconnect()
   }, [chat?.messages])
 
   // Redirect if chat doesn't exist
@@ -92,6 +116,23 @@ export default function ChatPage() {
           )}
         </div>
       </div>
+
+      {/* Scroll to bottom button */}
+      {showScrollButton && (
+        <div
+          className="pointer-events-none fixed bottom-20 right-0 flex justify-center transition-[left] duration-200 ease-linear"
+          style={{
+            left: isMobile ? 0 : isCollapsed ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)'
+          }}
+        >
+          <button
+            onClick={scrollToBottom}
+            className="pointer-events-auto p-2 rounded-full bg-background border border-border shadow-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Fixed input at bottom - responsive to sidebar */}
       <div
