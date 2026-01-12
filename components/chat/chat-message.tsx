@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { Message } from '@/lib/types/chat'
 import { Loader2 } from 'lucide-react'
@@ -9,8 +10,16 @@ interface ChatMessageProps {
   isLoading?: boolean
 }
 
+const TRUNCATE_LENGTH = 500
+
 export function ChatMessage({ message, isLoading }: ChatMessageProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const isUser = message.role === 'user'
+  const shouldTruncate = isUser && message.content.length > TRUNCATE_LENGTH
+
+  const displayContent = shouldTruncate && !isExpanded
+    ? message.content.slice(0, TRUNCATE_LENGTH) + '...'
+    : message.content
 
   return (
     <div className={cn('flex', isUser && 'justify-end')}>
@@ -29,7 +38,17 @@ export function ChatMessage({ message, isLoading }: ChatMessageProps) {
             <span className="text-sm">Thinking...</span>
           </div>
         ) : (
-          <p className="whitespace-pre-wrap text-base leading-relaxed">{message.content}</p>
+          <>
+            <p className="whitespace-pre-wrap text-base leading-relaxed">{displayContent}</p>
+            {shouldTruncate && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-2 text-sm opacity-70 hover:opacity-100 underline"
+              >
+                {isExpanded ? 'Show less' : 'Read more'}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
