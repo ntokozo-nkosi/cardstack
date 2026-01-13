@@ -27,18 +27,20 @@ export async function POST(
     }
 
     const result = await query(
-      'SELECT record_card_review($1, $2, $3) as success',
+      'SELECT record_card_review_sm2($1, $2, $3) as result',
       [id, user.id, response]
     )
 
-    if (!result.rows[0]?.success) {
+    const reviewResult = result.rows[0]?.result
+
+    if (!reviewResult?.success) {
       return NextResponse.json(
-        { error: 'Card not found or unauthorized' },
+        { error: reviewResult?.error || 'Card not found or unauthorized' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json(reviewResult)
   } catch (error) {
     console.error('Failed to record card review:', error)
     return NextResponse.json(

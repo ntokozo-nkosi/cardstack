@@ -17,6 +17,12 @@ interface Card {
   lastResponse?: string
   lastReviewedAt?: string
   reviewCount?: number
+  // SM-2 fields
+  repetitions?: number
+  easeFactor?: number
+  intervalDays?: number
+  dueDate?: string
+  isNew?: boolean
 }
 
 type ReviewResponse = 'again' | 'hard' | 'good' | 'easy'
@@ -25,16 +31,6 @@ interface Deck {
   id: string
   name: string
   cards: Card[]
-}
-
-// Fisher-Yates shuffle algorithm
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  return shuffled
 }
 
 const variants = {
@@ -65,10 +61,12 @@ export default function StudyModePage() {
 
   const [deck, setDeck] = useState<Deck | null>(null)
   const [queue, setQueue] = useState<Card[]>([])
+  const [totalCardsInSession, setTotalCardsInSession] = useState(0)
   const [completedCount, setCompletedCount] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [loading, setLoading] = useState(true)
   const [direction, setDirection] = useState(0)
+  const [showAllCards, setShowAllCards] = useState(false)
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -82,14 +80,35 @@ export default function StudyModePage() {
       }
       const data = await response.json()
       setDeck(data)
-      setQueue(shuffleArray(data.cards))
+
+      // Filter cards based on toggle
+      let cardsToStudy = data.cards
+
+      if (!showAllCards) {
+        // Show only cards that are due (due_date <= now)
+        const now = new Date()
+        cardsToStudy = data.cards.filter((card: Card) => {
+          if (!card.dueDate) return true  // New cards with no due date
+          return new Date(card.dueDate) <= now
+        })
+      }
+
+      // Sort: due cards first (by how overdue), then new cards
+      cardsToStudy.sort((a: Card, b: Card) => {
+        const aDue = a.dueDate ? new Date(a.dueDate) : new Date()
+        const bDue = b.dueDate ? new Date(b.dueDate) : new Date()
+        return aDue.getTime() - bDue.getTime()
+      })
+
+      setQueue(cardsToStudy)
+      setTotalCardsInSession(cardsToStudy.length)
       setCompletedCount(0)
     } catch (error) {
       console.error('Error fetching deck:', error)
     } finally {
       setLoading(false)
     }
-  }, [id, router])
+  }, [id, router, showAllCards])
 
   useEffect(() => {
     fetchDeck()
@@ -118,23 +137,11 @@ export default function StudyModePage() {
     // Fire and forget - don't block UI
     recordReview(currentCard.id, response)
 
-    // Again/Hard: Card goes back to end of queue
-    // Good/Easy: Card is completed
-    const movesToBack = response === 'again' || response === 'hard'
-
-    setDirection(movesToBack ? -1 : 1)
+    // Always remove card from queue - SM-2 determines when it's due next
+    setDirection(1)
     setTimeout(() => {
-      setQueue((prev) => {
-        const current = prev[0]
-        if (!current) return prev
-        if (movesToBack) {
-          return [...prev.slice(1), current]
-        }
-        return prev.slice(1)
-      })
-      if (!movesToBack) {
-        setCompletedCount(prev => prev + 1)
-      }
+      setQueue((prev) => prev.slice(1))
+      setCompletedCount(prev => prev + 1)
       setIsFlipped(false)
       setDirection(0)
     }, 200)
@@ -165,11 +172,8 @@ export default function StudyModePage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [queue.length, isFlipped, handleFlip, handleResponse])
 
-  // Calculate progress
-  const totalCards = deck?.cards.length || 0
-  // In a reshuffle queue (handleIncorrect moves to back), progress is weird. 
-  // Let's simpler visualize "Remaining" vs "Total".
-  const progress = totalCards > 0 ? ((totalCards - queue.length) / totalCards) * 100 : 0
+  // Calculate progress based on cards reviewed in this session
+  const progress = totalCardsInSession > 0 ? (completedCount / totalCardsInSession) * 100 : 0
 
   if (loading) {
     return (
@@ -209,9 +213,14 @@ export default function StudyModePage() {
 
   // Completion state
   if (queue.length === 0 && deck && deck.cards.length > 0) {
+    const totalCards = deck.cards.length
+    const dueCards = deck.cards.filter(c =>
+      !c.dueDate || new Date(c.dueDate) <= new Date()
+    ).length
+
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in zoom-in-95 duration-500">
-        <div className="w-full text-center">
+        <div className="w-full text-center space-y-6">
           <div className="relative mb-8 mx-auto w-24 h-24">
             <div className="absolute inset-0 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-full animate-pulse blur-xl" />
             <div className="relative flex items-center justify-center w-full h-full bg-background rounded-full border-4 border-yellow-100 dark:border-yellow-900/30 shadow-inner">
@@ -219,26 +228,40 @@ export default function StudyModePage() {
             </div>
           </div>
 
-          <div className="space-y-3 mb-10">
-            <h2 className="text-3xl font-bold tracking-tight">Session Complete!</h2>
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold tracking-tight">All done for now!</h2>
             <p className="text-muted-foreground text-lg max-w-lg mx-auto">
-              You&apos;ve successfully reviewed all <span className="font-semibold text-foreground">{deck.cards.length}</span> cards.
+              {showAllCards
+                ? `You've reviewed all ${totalCards} cards in this deck.`
+                : dueCards === 0
+                  ? `No cards are due right now. Come back later!`
+                  : `You've reviewed all due cards.`
+              }
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 w-full max-w-sm mx-auto">
+          {!showAllCards && deck.cards.length > dueCards && (
+            <Button
+              variant="outline"
+              onClick={() => setShowAllCards(true)}
+            >
+              Study all cards ({deck.cards.length} total)
+            </Button>
+          )}
+
+          <div className="grid grid-cols-2 gap-4 w-full max-w-sm mx-auto mt-8">
             <Button asChild variant="outline" size="lg" className="w-full">
               <Link href={`/decks/${id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Return to Deck
+                Back to Deck
               </Link>
             </Button>
             <Button size="lg" className="w-full shadow-md" onClick={() => {
-              setQueue(shuffleArray(deck.cards))
-              setCompletedCount(0)
+              setShowAllCards(false)
+              fetchDeck()
             }}>
               <RotateCcw className="mr-2 h-4 w-4" />
-              Study Again
+              Refresh
             </Button>
           </div>
         </div>
@@ -260,16 +283,28 @@ export default function StudyModePage() {
           Back to Deck
         </Link>
 
-        <div className="flex-1 max-w-xs sm:mx-8 w-full">
-          <div className="flex justify-between text-xs font-medium text-muted-foreground mb-2">
-            <span>Progress</span>
-            <span>{completedCount} of {deck?.cards.length}</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
+        <div className="flex items-center gap-4">
+          {/* Study mode toggle */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAllCards(!showAllCards)}
+            className="text-xs"
+          >
+            {showAllCards ? 'Due cards only' : 'Study all cards'}
+          </Button>
 
-        <div className="hidden sm:flex w-[100px] justify-end">
-          <ModeToggle />
+          <div className="flex-1 max-w-xs sm:mx-8 w-full">
+            <div className="flex justify-between text-xs font-medium text-muted-foreground mb-2">
+              <span>Progress</span>
+              <span>{completedCount} of {totalCardsInSession}</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+
+          <div className="hidden sm:flex w-[100px] justify-end">
+            <ModeToggle />
+          </div>
         </div>
       </header>
 
