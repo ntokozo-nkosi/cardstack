@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, RotateCcw, X, Check, Trophy, Keyboard } from 'lucide-react'
+import { ArrowLeft, RotateCcw, X, Check, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Flashcard } from '@/components/flashcard'
@@ -14,7 +14,12 @@ interface Card {
   id: string
   front: string
   back: string
+  lastResponse?: string
+  lastReviewedAt?: string
+  reviewCount?: number
 }
+
+type ReviewResponse = 'again' | 'hard' | 'good' | 'easy'
 
 interface Deck {
   id: string
@@ -94,28 +99,46 @@ export default function StudyModePage() {
     setIsFlipped(!isFlipped)
   }, [isFlipped])
 
-  const handleCorrect = useCallback(() => {
-    setDirection(1)
-    setTimeout(() => {
-      setQueue((prev) => prev.slice(1))
-      setCompletedCount(prev => prev + 1)
-      setIsFlipped(false)
-      setDirection(0)
-    }, 200)
+  const recordReview = useCallback(async (cardId: string, response: ReviewResponse) => {
+    try {
+      await fetch(`/api/cards/${cardId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response })
+      })
+    } catch (error) {
+      console.error('Failed to record review:', error)
+    }
   }, [])
 
-  const handleIncorrect = useCallback(() => {
-    setDirection(-1)
+  const handleResponse = useCallback((response: ReviewResponse) => {
+    const currentCard = queue[0]
+    if (!currentCard) return
+
+    // Fire and forget - don't block UI
+    recordReview(currentCard.id, response)
+
+    // Again/Hard: Card goes back to end of queue
+    // Good/Easy: Card is completed
+    const movesToBack = response === 'again' || response === 'hard'
+
+    setDirection(movesToBack ? -1 : 1)
     setTimeout(() => {
       setQueue((prev) => {
         const current = prev[0]
         if (!current) return prev
-        return [...prev.slice(1), current]
+        if (movesToBack) {
+          return [...prev.slice(1), current]
+        }
+        return prev.slice(1)
       })
+      if (!movesToBack) {
+        setCompletedCount(prev => prev + 1)
+      }
       setIsFlipped(false)
       setDirection(0)
     }, 200)
-  }, [])
+  }, [queue, recordReview])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -127,16 +150,20 @@ export default function StudyModePage() {
         handleFlip()
       } else if (isFlipped) {
         if (e.key === '1' || e.key === 'ArrowLeft') {
-          handleIncorrect()
-        } else if (e.key === '2' || e.key === 'ArrowRight') {
-          handleCorrect()
+          handleResponse('again')
+        } else if (e.key === '2') {
+          handleResponse('hard')
+        } else if (e.key === '3') {
+          handleResponse('good')
+        } else if (e.key === '4' || e.key === 'ArrowRight') {
+          handleResponse('easy')
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [queue.length, isFlipped, handleFlip, handleCorrect, handleIncorrect])
+  }, [queue.length, isFlipped, handleFlip, handleResponse])
 
   // Calculate progress
   const totalCards = deck?.cards.length || 0
@@ -278,27 +305,34 @@ export default function StudyModePage() {
         </div>
 
         {/* Keyboard Hints */}
-        <div className="hidden lg:flex items-center gap-8 mt-12 text-xs font-medium text-muted-foreground/60">
+        <div className="hidden lg:flex items-center gap-6 mt-12 text-xs font-medium text-muted-foreground/60">
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">Space</kbd>
-            <span>Flip Card</span>
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">Space</kbd>
+            <span>Flip</span>
           </div>
           <div className="w-px h-4 bg-border" />
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">1</kbd>
-            <span>Got it wrong</span>
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">1</kbd>
+            <span>Again</span>
           </div>
-          <div className="w-px h-4 bg-border" />
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">2</kbd>
-            <span>Got it right</span>
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">2</kbd>
+            <span>Hard</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">3</kbd>
+            <span>Good</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">4</kbd>
+            <span>Easy</span>
           </div>
         </div>
       </main>
 
       {/* Footer / Controls */}
       <footer className="mt-8 mb-4">
-        <div className="max-w-xl mx-auto flex items-center justify-center gap-4 transition-all duration-300"
+        <div className="max-w-2xl mx-auto grid grid-cols-4 gap-2 sm:gap-3 transition-all duration-300"
           style={{
             opacity: isFlipped ? 1 : 0.5,
             pointerEvents: isFlipped ? 'auto' : 'none',
@@ -308,20 +342,46 @@ export default function StudyModePage() {
           <Button
             variant="outline"
             size="lg"
-            onClick={handleIncorrect}
-            className="flex-1 h-12 text-base border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive active:scale-95 transition-all"
+            onClick={() => handleResponse('again')}
+            className="h-auto py-2 flex flex-col gap-0.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive active:scale-95 transition-all"
           >
-            <X className="mr-2 h-4 w-4" />
-            Got it wrong
+            <span className="flex items-center text-sm sm:text-base">
+              <X className="mr-1 h-4 w-4" />
+              Again
+            </span>
+            <span className="text-[10px] sm:text-xs opacity-70 font-normal">Didn&apos;t know</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => handleResponse('hard')}
+            className="h-auto py-2 flex flex-col gap-0.5 border-amber-500/30 text-amber-600 dark:text-amber-500 hover:bg-amber-500/10 hover:border-amber-500/40 active:scale-95 transition-all"
+          >
+            <span className="text-sm sm:text-base">Hard</span>
+            <span className="text-[10px] sm:text-xs opacity-70 font-normal">Barely knew</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => handleResponse('good')}
+            className="h-auto py-2 flex flex-col gap-0.5 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/40 active:scale-95 transition-all"
+          >
+            <span className="text-sm sm:text-base">Good</span>
+            <span className="text-[10px] sm:text-xs opacity-70 font-normal">Knew it</span>
           </Button>
 
           <Button
             size="lg"
-            onClick={handleCorrect}
-            className="flex-1 h-12 text-base active:scale-95 transition-all shadow-sm"
+            onClick={() => handleResponse('easy')}
+            className="h-auto py-2 flex flex-col gap-0.5 bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all shadow-sm"
           >
-            <Check className="mr-2 h-4 w-4" />
-            Got it right
+            <span className="flex items-center text-sm sm:text-base">
+              <Check className="mr-1 h-4 w-4" />
+              Easy
+            </span>
+            <span className="text-[10px] sm:text-xs opacity-80 font-normal">Too easy</span>
           </Button>
         </div>
       </footer>
