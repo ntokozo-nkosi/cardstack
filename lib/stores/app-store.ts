@@ -59,6 +59,7 @@ interface AppState {
   fetchDecks: () => Promise<void>
   ensureDecksLoaded: () => Promise<void>
   addDeck: (input: DeckInput) => Promise<Deck | null>
+  insertDeck: (deck: { id: string; name: string; description: string | null }) => void
   updateDeck: (id: string, input: DeckInput) => Promise<boolean>
   deleteDeck: (id: string) => Promise<boolean>
   incrementDeckCardCount: (deckId: string, amount?: number) => void
@@ -68,6 +69,7 @@ interface AppState {
   fetchCollections: () => Promise<void>
   ensureCollectionsLoaded: () => Promise<void>
   addCollection: (input: CollectionInput) => Promise<Collection | null>
+  insertCollection: (collection: { id: string; name: string; description: string | null }) => void
   updateCollection: (id: string, input: CollectionInput) => Promise<boolean>
   deleteCollection: (id: string) => Promise<boolean>
   incrementCollectionDeckCount: (collectionId: string) => void
@@ -167,6 +169,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       }))
       return null
     }
+  },
+
+  // Insert deck directly into store (no API call, used for AI-created decks)
+  insertDeck: (deck) => {
+    set((state) => ({
+      decks: [{ ...deck, _count: { cards: 0 } }, ...state.decks]
+    }))
   },
 
   // Update deck with optimistic update
@@ -329,6 +338,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       }))
       return null
     }
+  },
+
+  // Insert collection directly into store (no API call, used for AI-created collections)
+  insertCollection: (collection) => {
+    set((state) => ({
+      collections: [{ ...collection, _count: { decks: 0 } }, ...state.collections]
+    }))
   },
 
   // Update collection with optimistic update
