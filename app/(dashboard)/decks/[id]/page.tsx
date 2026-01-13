@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload } from 'lucide-react'
+import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/lib/stores/app-store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
@@ -59,6 +60,9 @@ export default function DeckDetailPage() {
   const [editedDescription, setEditedDescription] = useState('')
   const [isSavingDescription, setIsSavingDescription] = useState(false)
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -100,6 +104,20 @@ export default function DeckDetailPage() {
       textarea.setSelectionRange(length, length)
     }
   }, [isEditingDescription])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  const filteredCards = deck?.cards.filter(card => {
+    const searchLower = debouncedSearchTerm.toLowerCase()
+    return card.front.toLowerCase().includes(searchLower) ||
+           card.back.toLowerCase().includes(searchLower)
+  }) || []
 
   const startEditingTitle = () => {
     if (deck) {
@@ -417,6 +435,45 @@ export default function DeckDetailPage() {
         </div>
       </div>
 
+      {deck.cards.length > 0 && (
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between py-4 border-b border-border/50">
+          <div className="flex-1 relative">
+            <Input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search flashcards (front or back)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && searchTerm) {
+                  setSearchTerm('')
+                }
+              }}
+              className="pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {debouncedSearchTerm && (
+            <div className="text-sm text-muted-foreground">
+              {filteredCards.length} of {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
+            </div>
+          )}
+        </div>
+      )}
+
       {deck.cards.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-24 text-center animate-in fade-in-50">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted/50 mb-6">
@@ -431,9 +488,24 @@ export default function DeckDetailPage() {
             Create First Card
           </Button>
         </div>
+      ) : debouncedSearchTerm && filteredCards.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center animate-in fade-in-50">
+          <Search className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+          <h3 className="text-lg font-semibold">No cards found</h3>
+          <p className="mt-2 text-muted-foreground max-w-sm mx-auto">
+            No flashcards match &quot;{debouncedSearchTerm}&quot;. Try different keywords.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setSearchTerm('')}
+            className="mt-6"
+          >
+            Clear Search
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {deck.cards.map((card) => (
+          {filteredCards.map((card) => (
             <div
               key={card.id}
               className="group relative flex flex-col justify-between rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md hover:border-muted-foreground/30 cursor-pointer"
