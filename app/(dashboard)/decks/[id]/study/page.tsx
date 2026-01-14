@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, RotateCcw, X, Check, Trophy, Keyboard } from 'lucide-react'
+import { ArrowLeft, RotateCcw, X, Check, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Flashcard } from '@/components/flashcard'
@@ -14,22 +14,23 @@ interface Card {
   id: string
   front: string
   back: string
+  lastResponse?: string
+  lastReviewedAt?: string
+  reviewCount?: number
+  // SM-2 fields
+  repetitions?: number
+  easeFactor?: number
+  intervalDays?: number
+  dueDate?: string
+  isNew?: boolean
 }
+
+type ReviewResponse = 'again' | 'hard' | 'good' | 'easy'
 
 interface Deck {
   id: string
   name: string
   cards: Card[]
-}
-
-// Fisher-Yates shuffle algorithm
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  return shuffled
 }
 
 const variants = {
@@ -60,10 +61,12 @@ export default function StudyModePage() {
 
   const [deck, setDeck] = useState<Deck | null>(null)
   const [queue, setQueue] = useState<Card[]>([])
+  const [totalCardsInSession, setTotalCardsInSession] = useState(0)
   const [completedCount, setCompletedCount] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [loading, setLoading] = useState(true)
   const [direction, setDirection] = useState(0)
+  const [showAllCards, setShowAllCards] = useState(false)
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -77,14 +80,35 @@ export default function StudyModePage() {
       }
       const data = await response.json()
       setDeck(data)
-      setQueue(shuffleArray(data.cards))
+
+      // Filter cards based on toggle
+      let cardsToStudy = data.cards
+
+      if (!showAllCards) {
+        // Show only cards that are due (due_date <= now)
+        const now = new Date()
+        cardsToStudy = data.cards.filter((card: Card) => {
+          if (!card.dueDate) return true  // New cards with no due date
+          return new Date(card.dueDate) <= now
+        })
+      }
+
+      // Sort: due cards first (by how overdue), then new cards
+      cardsToStudy.sort((a: Card, b: Card) => {
+        const aDue = a.dueDate ? new Date(a.dueDate) : new Date()
+        const bDue = b.dueDate ? new Date(b.dueDate) : new Date()
+        return aDue.getTime() - bDue.getTime()
+      })
+
+      setQueue(cardsToStudy)
+      setTotalCardsInSession(cardsToStudy.length)
       setCompletedCount(0)
     } catch (error) {
       console.error('Error fetching deck:', error)
     } finally {
       setLoading(false)
     }
-  }, [id, router])
+  }, [id, router, showAllCards])
 
   useEffect(() => {
     fetchDeck()
@@ -94,28 +118,76 @@ export default function StudyModePage() {
     setIsFlipped(!isFlipped)
   }, [isFlipped])
 
-  const handleCorrect = useCallback(() => {
-    setDirection(1)
-    setTimeout(() => {
-      setQueue((prev) => prev.slice(1))
-      setCompletedCount(prev => prev + 1)
-      setIsFlipped(false)
-      setDirection(0)
-    }, 200)
+  const recordReview = useCallback(async (cardId: string, response: ReviewResponse) => {
+    try {
+      await fetch(`/api/cards/${cardId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response })
+      })
+    } catch (error) {
+      console.error('Failed to record review:', error)
+    }
   }, [])
 
-  const handleIncorrect = useCallback(() => {
-    setDirection(-1)
-    setTimeout(() => {
-      setQueue((prev) => {
-        const current = prev[0]
-        if (!current) return prev
-        return [...prev.slice(1), current]
-      })
-      setIsFlipped(false)
-      setDirection(0)
-    }, 200)
-  }, [])
+  const handleResponse = useCallback((response: ReviewResponse) => {
+    const currentCard = queue[0]
+    if (!currentCard) return
+
+    // Fire and forget - don't block UI
+    recordReview(currentCard.id, response)
+
+    // "Again" inserts randomly within next few cards (review again in this session)
+    // "Hard/Good/Easy" removes from queue (SM-2 schedules for future)
+    if (response === 'again') {
+      setDirection(-1)
+      setTimeout(() => {
+        setQueue((prev) => {
+          const current = prev[0]
+          if (!current) return prev
+
+          // Adaptive random insertion based on queue size
+          let minPos = 3
+          let maxPos = 7
+
+          if (prev.length <= 5) {
+            // Small queue: insert near end
+            minPos = Math.max(1, prev.length - 2)
+            maxPos = prev.length
+          } else if (prev.length <= 15) {
+            // Medium queue: insert after 3-7 cards
+            minPos = 3
+            maxPos = 7
+          } else {
+            // Large queue: insert after 5-10 cards
+            minPos = 5
+            maxPos = 10
+          }
+
+          // Random position within range
+          const insertPosition = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos
+          const safePosition = Math.min(insertPosition, prev.length)
+
+          // Insert card at random position
+          return [
+            ...prev.slice(1, safePosition),
+            current,
+            ...prev.slice(safePosition)
+          ]
+        })
+        setIsFlipped(false)
+        setDirection(0)
+      }, 200)
+    } else {
+      setDirection(1)
+      setTimeout(() => {
+        setQueue((prev) => prev.slice(1))
+        setCompletedCount(prev => prev + 1)
+        setIsFlipped(false)
+        setDirection(0)
+      }, 200)
+    }
+  }, [queue, recordReview])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -127,22 +199,23 @@ export default function StudyModePage() {
         handleFlip()
       } else if (isFlipped) {
         if (e.key === '1' || e.key === 'ArrowLeft') {
-          handleIncorrect()
-        } else if (e.key === '2' || e.key === 'ArrowRight') {
-          handleCorrect()
+          handleResponse('again')
+        } else if (e.key === '2') {
+          handleResponse('hard')
+        } else if (e.key === '3') {
+          handleResponse('good')
+        } else if (e.key === '4' || e.key === 'ArrowRight') {
+          handleResponse('easy')
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [queue.length, isFlipped, handleFlip, handleCorrect, handleIncorrect])
+  }, [queue.length, isFlipped, handleFlip, handleResponse])
 
-  // Calculate progress
-  const totalCards = deck?.cards.length || 0
-  // In a reshuffle queue (handleIncorrect moves to back), progress is weird. 
-  // Let's simpler visualize "Remaining" vs "Total".
-  const progress = totalCards > 0 ? ((totalCards - queue.length) / totalCards) * 100 : 0
+  // Calculate progress based on cards reviewed in this session
+  const progress = totalCardsInSession > 0 ? (completedCount / totalCardsInSession) * 100 : 0
 
   if (loading) {
     return (
@@ -182,9 +255,14 @@ export default function StudyModePage() {
 
   // Completion state
   if (queue.length === 0 && deck && deck.cards.length > 0) {
+    const totalCards = deck.cards.length
+    const dueCards = deck.cards.filter(c =>
+      !c.dueDate || new Date(c.dueDate) <= new Date()
+    ).length
+
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-12 flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in zoom-in-95 duration-500">
-        <div className="w-full text-center">
+        <div className="w-full text-center space-y-6">
           <div className="relative mb-8 mx-auto w-24 h-24">
             <div className="absolute inset-0 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-full animate-pulse blur-xl" />
             <div className="relative flex items-center justify-center w-full h-full bg-background rounded-full border-4 border-yellow-100 dark:border-yellow-900/30 shadow-inner">
@@ -192,26 +270,40 @@ export default function StudyModePage() {
             </div>
           </div>
 
-          <div className="space-y-3 mb-10">
-            <h2 className="text-3xl font-bold tracking-tight">Session Complete!</h2>
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold tracking-tight">All done for now!</h2>
             <p className="text-muted-foreground text-lg max-w-lg mx-auto">
-              You&apos;ve successfully reviewed all <span className="font-semibold text-foreground">{deck.cards.length}</span> cards.
+              {showAllCards
+                ? `You've reviewed all ${totalCards} cards in this deck.`
+                : dueCards === 0
+                  ? `No cards are due right now. Come back later!`
+                  : `You've reviewed all due cards.`
+              }
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 w-full max-w-sm mx-auto">
+          {!showAllCards && deck.cards.length > dueCards && (
+            <Button
+              variant="outline"
+              onClick={() => setShowAllCards(true)}
+            >
+              Study all cards ({deck.cards.length} total)
+            </Button>
+          )}
+
+          <div className="grid grid-cols-2 gap-4 w-full max-w-sm mx-auto mt-8">
             <Button asChild variant="outline" size="lg" className="w-full">
               <Link href={`/decks/${id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Return to Deck
+                Back to Deck
               </Link>
             </Button>
             <Button size="lg" className="w-full shadow-md" onClick={() => {
-              setQueue(shuffleArray(deck.cards))
-              setCompletedCount(0)
+              setShowAllCards(false)
+              fetchDeck()
             }}>
               <RotateCcw className="mr-2 h-4 w-4" />
-              Study Again
+              Refresh
             </Button>
           </div>
         </div>
@@ -233,16 +325,28 @@ export default function StudyModePage() {
           Back to Deck
         </Link>
 
-        <div className="flex-1 max-w-xs sm:mx-8 w-full">
-          <div className="flex justify-between text-xs font-medium text-muted-foreground mb-2">
-            <span>Progress</span>
-            <span>{completedCount} of {deck?.cards.length}</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
+        <div className="flex items-center gap-4">
+          {/* Study mode toggle */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAllCards(!showAllCards)}
+            className="text-xs"
+          >
+            {showAllCards ? 'Due cards only' : 'Study all cards'}
+          </Button>
 
-        <div className="hidden sm:flex w-[100px] justify-end">
-          <ModeToggle />
+          <div className="flex-1 max-w-xs sm:mx-8 w-full">
+            <div className="flex justify-between text-xs font-medium text-muted-foreground mb-2">
+              <span>Progress</span>
+              <span>{completedCount} of {totalCardsInSession}</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+
+          <div className="hidden sm:flex w-[100px] justify-end">
+            <ModeToggle />
+          </div>
         </div>
       </header>
 
@@ -278,27 +382,34 @@ export default function StudyModePage() {
         </div>
 
         {/* Keyboard Hints */}
-        <div className="hidden lg:flex items-center gap-8 mt-12 text-xs font-medium text-muted-foreground/60">
+        <div className="hidden lg:flex items-center gap-6 mt-12 text-xs font-medium text-muted-foreground/60">
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">Space</kbd>
-            <span>Flip Card</span>
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">Space</kbd>
+            <span>Flip</span>
           </div>
           <div className="w-px h-4 bg-border" />
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">1</kbd>
-            <span>Got it wrong</span>
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">1</kbd>
+            <span>Again</span>
           </div>
-          <div className="w-px h-4 bg-border" />
           <div className="flex items-center gap-2">
-            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">2</kbd>
-            <span>Got it right</span>
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">2</kbd>
+            <span>Hard</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">3</kbd>
+            <span>Good</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="h-5 items-center gap-1 rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground opacity-100 px-1.5">4</kbd>
+            <span>Easy</span>
           </div>
         </div>
       </main>
 
       {/* Footer / Controls */}
       <footer className="mt-8 mb-4">
-        <div className="max-w-xl mx-auto flex items-center justify-center gap-4 transition-all duration-300"
+        <div className="max-w-2xl mx-auto grid grid-cols-4 gap-2 sm:gap-3 transition-all duration-300"
           style={{
             opacity: isFlipped ? 1 : 0.5,
             pointerEvents: isFlipped ? 'auto' : 'none',
@@ -308,20 +419,46 @@ export default function StudyModePage() {
           <Button
             variant="outline"
             size="lg"
-            onClick={handleIncorrect}
-            className="flex-1 h-12 text-base border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive active:scale-95 transition-all"
+            onClick={() => handleResponse('again')}
+            className="h-auto py-2 flex flex-col gap-0.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive active:scale-95 transition-all"
           >
-            <X className="mr-2 h-4 w-4" />
-            Got it wrong
+            <span className="flex items-center text-sm sm:text-base">
+              <X className="mr-1 h-4 w-4" />
+              Again
+            </span>
+            <span className="text-[10px] sm:text-xs opacity-70 font-normal">Didn&apos;t know</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => handleResponse('hard')}
+            className="h-auto py-2 flex flex-col gap-0.5 border-amber-500/30 text-amber-600 dark:text-amber-500 hover:bg-amber-500/10 hover:border-amber-500/40 active:scale-95 transition-all"
+          >
+            <span className="text-sm sm:text-base">Hard</span>
+            <span className="text-[10px] sm:text-xs opacity-70 font-normal">Barely knew</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => handleResponse('good')}
+            className="h-auto py-2 flex flex-col gap-0.5 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/40 active:scale-95 transition-all"
+          >
+            <span className="text-sm sm:text-base">Good</span>
+            <span className="text-[10px] sm:text-xs opacity-70 font-normal">Knew it</span>
           </Button>
 
           <Button
             size="lg"
-            onClick={handleCorrect}
-            className="flex-1 h-12 text-base active:scale-95 transition-all shadow-sm"
+            onClick={() => handleResponse('easy')}
+            className="h-auto py-2 flex flex-col gap-0.5 bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all shadow-sm"
           >
-            <Check className="mr-2 h-4 w-4" />
-            Got it right
+            <span className="flex items-center text-sm sm:text-base">
+              <Check className="mr-1 h-4 w-4" />
+              Easy
+            </span>
+            <span className="text-[10px] sm:text-xs opacity-80 font-normal">Too easy</span>
           </Button>
         </div>
       </footer>
