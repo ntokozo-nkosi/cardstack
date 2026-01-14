@@ -137,14 +137,56 @@ export default function StudyModePage() {
     // Fire and forget - don't block UI
     recordReview(currentCard.id, response)
 
-    // Always remove card from queue - SM-2 determines when it's due next
-    setDirection(1)
-    setTimeout(() => {
-      setQueue((prev) => prev.slice(1))
-      setCompletedCount(prev => prev + 1)
-      setIsFlipped(false)
-      setDirection(0)
-    }, 200)
+    // "Again" inserts randomly within next few cards (review again in this session)
+    // "Hard/Good/Easy" removes from queue (SM-2 schedules for future)
+    if (response === 'again') {
+      setDirection(-1)
+      setTimeout(() => {
+        setQueue((prev) => {
+          const current = prev[0]
+          if (!current) return prev
+
+          // Adaptive random insertion based on queue size
+          let minPos = 3
+          let maxPos = 7
+
+          if (prev.length <= 5) {
+            // Small queue: insert near end
+            minPos = Math.max(1, prev.length - 2)
+            maxPos = prev.length
+          } else if (prev.length <= 15) {
+            // Medium queue: insert after 3-7 cards
+            minPos = 3
+            maxPos = 7
+          } else {
+            // Large queue: insert after 5-10 cards
+            minPos = 5
+            maxPos = 10
+          }
+
+          // Random position within range
+          const insertPosition = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos
+          const safePosition = Math.min(insertPosition, prev.length)
+
+          // Insert card at random position
+          return [
+            ...prev.slice(1, safePosition),
+            current,
+            ...prev.slice(safePosition)
+          ]
+        })
+        setIsFlipped(false)
+        setDirection(0)
+      }, 200)
+    } else {
+      setDirection(1)
+      setTimeout(() => {
+        setQueue((prev) => prev.slice(1))
+        setCompletedCount(prev => prev + 1)
+        setIsFlipped(false)
+        setDirection(0)
+      }, 200)
+    }
   }, [queue, recordReview])
 
   // Keyboard shortcuts

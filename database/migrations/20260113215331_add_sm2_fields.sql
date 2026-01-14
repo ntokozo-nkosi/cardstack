@@ -65,10 +65,14 @@ BEGIN
       v_new_interval := ROUND(v_card.interval_days * v_card.ease_factor, 2);
     END IF;
     v_new_reps := v_card.repetitions + 1;
-  ELSE
-    -- Incorrect response (quality < 3)
+  ELSIF v_quality = 0 THEN
+    -- "Again" response: review in current session (1 minute)
     v_new_reps := 0;
-    v_new_interval := 1;  -- Review again tomorrow
+    v_new_interval := 0.0007;  -- ~1 minute (1/1440 days)
+  ELSE
+    -- "Hard" response (quality = 2): review tomorrow
+    v_new_reps := 0;
+    v_new_interval := 1;  -- 1 day
   END IF;
 
   -- SM-2 Algorithm: Update Ease Factor
