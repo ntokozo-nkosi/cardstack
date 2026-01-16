@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload, Search, X } from 'lucide-react'
@@ -26,6 +26,9 @@ interface Card {
   id: string
   front: string
   back: string
+  repetitions?: number
+  dueDate?: string
+  isNew?: boolean
 }
 
 interface Deck {
@@ -118,6 +121,29 @@ export default function DeckDetailPage() {
     return card.front.toLowerCase().includes(searchLower) ||
            card.back.toLowerCase().includes(searchLower)
   }) || []
+
+  const stats = useMemo(() => {
+    if (!deck?.cards) return { due: 0, new: 0, learning: 0, mature: 0 }
+
+    const now = new Date()
+    return deck.cards.reduce((acc, card) => {
+      const isDue = !card.dueDate || new Date(card.dueDate) <= now
+      const isNew = card.isNew ?? true
+      const reps = card.repetitions ?? 0
+
+      if (isNew) {
+        acc.new++
+      } else if (reps >= 3) {
+        acc.mature++
+      } else {
+        acc.learning++
+      }
+
+      if (isDue) acc.due++
+
+      return acc
+    }, { due: 0, new: 0, learning: 0, mature: 0 })
+  }, [deck?.cards])
 
   const startEditingTitle = () => {
     if (deck) {
@@ -387,9 +413,40 @@ export default function DeckDetailPage() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center text-sm font-medium mt-1">
-                <Library className="mr-2 h-4 w-4" />
-                {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium mt-2">
+                <div className="flex items-center text-muted-foreground">
+                  <Library className="mr-2 h-4 w-4" />
+                  {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
+                </div>
+                {deck.cards.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground/60">|</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-primary/10 px-1.5 text-xs font-semibold text-primary">
+                        {stats.due}
+                      </span>
+                      <span className="text-muted-foreground">due</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-blue-500/10 px-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        {stats.new}
+                      </span>
+                      <span className="text-muted-foreground">new</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-orange-500/10 px-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
+                        {stats.learning}
+                      </span>
+                      <span className="text-muted-foreground">learning</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-green-500/10 px-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
+                        {stats.mature}
+                      </span>
+                      <span className="text-muted-foreground">mature</span>
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

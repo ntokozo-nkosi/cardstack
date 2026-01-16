@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Play, Trash2, Library } from 'lucide-react'
+import { Plus, Play, Trash2, Library, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CreateDeckDialog } from '@/components/create-deck-dialog'
@@ -11,6 +11,12 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useDecks } from '@/hooks/use-decks'
 import { useAppStore, type Deck } from '@/lib/stores/app-store'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function DecksPage() {
   const { decks, isLoading } = useDecks()
@@ -122,26 +128,14 @@ export default function DecksPage() {
 
               <div className="mt-auto border-t bg-muted/20 p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center text-sm font-medium text-muted-foreground">
-                    <span className="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-background border px-2 shadow-sm text-xs">
-                      {deck._count.cards}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-background border px-2 shadow-sm text-xs font-medium">
+                      {deck._count.due}
                     </span>
-                    <span className="ml-2">{deck._count.cards === 1 ? 'card' : 'cards'}</span>
+                    <span>{deck._count.due === 1 ? 'card' : 'cards'} due</span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(deck)}
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      aria-label={`Delete ${deck.name}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-
-                    <div className="h-4 w-px bg-border mx-1" />
-
                     <Button asChild variant="outline" size="sm" className="h-8 shadow-none">
                       <Link href={`/decks/${deck.id}`}>View</Link>
                     </Button>
@@ -154,6 +148,27 @@ export default function DecksPage() {
                         </Link>
                       </Button>
                     )}
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(deck)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>
