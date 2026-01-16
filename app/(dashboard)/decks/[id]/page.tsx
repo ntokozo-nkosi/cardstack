@@ -15,6 +15,7 @@ import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
 import { AddToCollectionDialog } from '@/components/add-to-collection-dialog'
 import { ImportCardsDialog } from '@/components/import-cards-dialog'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,6 +145,21 @@ export default function DeckDetailPage() {
       return acc
     }, { due: 0, new: 0, learning: 0, mature: 0 })
   }, [deck?.cards])
+
+  const getCardDueLabel = (card: Card) => {
+    if (!card.dueDate) return { label: 'Due', isDue: true }
+
+    const now = new Date()
+    const dueDate = new Date(card.dueDate)
+
+    if (dueDate <= now) return { label: 'Due', isDue: true }
+
+    const diffTime = dueDate.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 1) return { label: 'Due tomorrow', isDue: false }
+    return { label: `Due in ${diffDays} days`, isDue: false }
+  }
 
   const startEditingTitle = () => {
     if (deck) {
@@ -569,7 +585,20 @@ export default function DeckDetailPage() {
               onClick={() => handleEdit(card)}
             >
               <div className="mb-4">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Front</h4>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Front</h4>
+                  {(() => {
+                    const { label, isDue } = getCardDueLabel(card)
+                    return (
+                      <span className={cn(
+                        "text-xs",
+                        isDue ? "text-primary font-medium" : "text-muted-foreground/60"
+                      )}>
+                        {label}
+                      </span>
+                    )
+                  })()}
+                </div>
                 <p className="text-base leading-relaxed whitespace-pre-wrap">{card.front}</p>
               </div>
 
