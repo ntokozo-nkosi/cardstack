@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { AddDeckToCollectionDialog } from '@/components/add-deck-to-collection-dialog'
 import { CreateDeckFromCollectionDialog } from '@/components/create-deck-from-collection-dialog'
 import { toast } from 'sonner'
-import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { cn } from '@/lib/utils'
 import {
     DropdownMenu,
@@ -490,12 +490,13 @@ export default function CollectionDetailsPage() {
                 onSuccess={fetchCollection}
             />
 
-            <DeleteConfirmDialog
+            <ConfirmDialog
                 open={deleteDeckDialogOpen}
                 onOpenChange={setDeleteDeckDialogOpen}
                 onConfirm={confirmRemoveDeck}
                 title="Remove Deck from Collection"
                 description={`Are you sure you want to remove "${selectedDeckToRemove?.name}" from this collection? The deck itself will NOT be deleted.`}
+                confirmText="Remove"
             />
         </div>
     )

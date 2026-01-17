@@ -7,6 +7,7 @@ export interface Deck {
   description: string | null
   _count: {
     cards: number
+    due: number
   }
 }
 
@@ -138,7 +139,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       id: tempId,
       name: input.name,
       description: input.description || null,
-      _count: { cards: 0 },
+      _count: { cards: 0, due: 0 },
     }
 
     // Optimistic add
@@ -154,7 +155,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (!response.ok) throw new Error('Failed to create deck')
 
       const newDeck = await response.json()
-      const realDeck: Deck = { ...newDeck, _count: { cards: 0 } }
+      const realDeck: Deck = { ...newDeck, _count: { cards: 0, due: 0 } }
 
       // Replace temp with real
       set((state) => ({
@@ -174,7 +175,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Insert deck directly into store (no API call, used for AI-created decks)
   insertDeck: (deck) => {
     set((state) => ({
-      decks: [{ ...deck, _count: { cards: 0 } }, ...state.decks]
+      decks: [{ ...deck, _count: { cards: 0, due: 0 } }, ...state.decks]
     }))
   },
 
@@ -259,7 +260,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   incrementDeckCardCount: (deckId, amount = 1) => {
     set((state) => ({
       decks: state.decks.map((d) =>
-        d.id === deckId ? { ...d, _count: { cards: d._count.cards + amount } } : d
+        d.id === deckId ? { ...d, _count: { ...d._count, cards: d._count.cards + amount } } : d
       ),
     }))
   },
@@ -268,7 +269,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({
       decks: state.decks.map((d) =>
         d.id === deckId
-          ? { ...d, _count: { cards: Math.max(0, d._count.cards - amount) } }
+          ? { ...d, _count: { ...d._count, cards: Math.max(0, d._count.cards - amount) } }
           : d
       ),
     }))
@@ -546,7 +547,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       id: tempId,
       name: input.name,
       description: input.description || null,
-      _count: { cards: 0 },
+      _count: { cards: 0, due: 0 },
     }
 
     const { collectionDecks, incrementCollectionDeckCount } = get()
@@ -572,7 +573,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (!response.ok) throw new Error('Failed to create deck in collection')
 
       const newDeck = await response.json()
-      const realDeck: Deck = { ...newDeck, _count: { cards: 0 } }
+      const realDeck: Deck = { ...newDeck, _count: { cards: 0, due: 0 } }
 
       // Replace temp with real in both decks and collectionDecks
       set((state) => ({

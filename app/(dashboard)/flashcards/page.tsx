@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EditCardDialog } from '@/components/edit-card-dialog';
-import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CreateCardDialog } from '@/components/create-card-dialog';
 import { ImportCardsDialog } from '@/components/import-cards-dialog';
 import {
@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, MoreHorizontal, Edit2, Trash2, Upload, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAppStore } from '@/lib/stores/app-store';
+import { cn } from '@/lib/utils';
 
 interface Flashcard {
   id: string;
@@ -40,7 +41,23 @@ interface Flashcard {
   deckId: string;
   deckName: string;
   createdAt: string;
+  dueDate: string | null;
 }
+
+const getDueLabel = (dueDate: string | null) => {
+  if (!dueDate) return { label: 'Due', isDue: true };
+
+  const now = new Date();
+  const due = new Date(dueDate);
+
+  if (due <= now) return { label: 'Due', isDue: true };
+
+  const diffTime = due.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 1) return { label: 'Tomorrow', isDue: false };
+  return { label: `${diffDays} days`, isDue: false };
+};
 
 export default function FlashcardsPage() {
   const decrementDeckCardCount = useAppStore((state) => state.decrementDeckCardCount);
@@ -313,7 +330,7 @@ export default function FlashcardsPage() {
                     </TableHead>
                     <TableHead>Deck</TableHead>
                     <TableHead>Front Content</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead>Due</TableHead>
                     <TableHead className="sticky right-0 w-[100px] bg-background border-l border-border"><span className="sr-only">Actions</span></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -365,8 +382,18 @@ export default function FlashcardsPage() {
                           }
                         })()}
                       </TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">
-                        {new Date(card.createdAt).toLocaleDateString()}
+                      <TableCell className="whitespace-nowrap">
+                        {(() => {
+                          const { label, isDue } = getDueLabel(card.dueDate);
+                          return (
+                            <span className={cn(
+                              "text-sm",
+                              isDue ? "text-primary font-medium" : "text-muted-foreground"
+                            )}>
+                              {label}
+                            </span>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="sticky right-0 w-[100px] bg-background group-hover:bg-muted/50 transition-colors border-l border-border">
                         <div className="flex items-center justify-center gap-1">
@@ -493,7 +520,7 @@ export default function FlashcardsPage() {
 
         {/* Delete Confirmation Dialog */}
         {deletingCard && (
-          <DeleteConfirmDialog
+          <ConfirmDialog
             open={!!deletingCard}
             onOpenChange={(open) => {
               if (!open) setDeletingCard(null);
@@ -506,12 +533,13 @@ export default function FlashcardsPage() {
             }}
             title="Delete Card"
             description="Are you sure you want to delete this card? This action cannot be undone."
+            confirmText="Delete"
           />
         )}
 
         {/* Bulk Delete Confirmation Dialog */}
         {bulkDeleting && (
-          <DeleteConfirmDialog
+          <ConfirmDialog
             open={bulkDeleting}
             onOpenChange={(open) => {
               if (!open) setBulkDeleting(false);
@@ -522,6 +550,7 @@ export default function FlashcardsPage() {
             }}
             title="Delete Cards"
             description={`Are you sure you want to delete ${selectedCards.size} card${selectedCards.size !== 1 ? 's' : ''}? This action cannot be undone.`}
+            confirmText="Delete"
           />
         )}
 

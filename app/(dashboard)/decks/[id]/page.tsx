@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload, Search, X } from 'lucide-react'
+import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload, Search, X, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/lib/stores/app-store'
@@ -11,10 +11,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { CreateCardDialog } from '@/components/create-card-dialog'
 import { EditCardDialog } from '@/components/edit-card-dialog'
-import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { AddToCollectionDialog } from '@/components/add-to-collection-dialog'
 import { ImportCardsDialog } from '@/components/import-cards-dialog'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,9 @@ interface Card {
   id: string
   front: string
   back: string
+  repetitions?: number
+  dueDate?: string
+  isNew?: boolean
 }
 
 interface Deck {
@@ -63,6 +67,8 @@ export default function DeckDetailPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const [resetDeckDialogOpen, setResetDeckDialogOpen] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -118,6 +124,44 @@ export default function DeckDetailPage() {
     return card.front.toLowerCase().includes(searchLower) ||
            card.back.toLowerCase().includes(searchLower)
   }) || []
+
+  const stats = useMemo(() => {
+    if (!deck?.cards) return { due: 0, new: 0, learning: 0, mature: 0 }
+
+    const now = new Date()
+    return deck.cards.reduce((acc, card) => {
+      const isDue = !card.dueDate || new Date(card.dueDate) <= now
+      const isNew = card.isNew ?? true
+      const reps = card.repetitions ?? 0
+
+      if (isNew) {
+        acc.new++
+      } else if (reps >= 3) {
+        acc.mature++
+      } else {
+        acc.learning++
+      }
+
+      if (isDue) acc.due++
+
+      return acc
+    }, { due: 0, new: 0, learning: 0, mature: 0 })
+  }, [deck?.cards])
+
+  const getCardDueLabel = (card: Card) => {
+    if (!card.dueDate) return { label: 'Due', isDue: true }
+
+    const now = new Date()
+    const dueDate = new Date(card.dueDate)
+
+    if (dueDate <= now) return { label: 'Due', isDue: true }
+
+    const diffTime = dueDate.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 1) return { label: 'Due tomorrow', isDue: false }
+    return { label: `Due in ${diffDays} days`, isDue: false }
+  }
 
   const startEditingTitle = () => {
     if (deck) {
@@ -274,6 +318,29 @@ export default function DeckDetailPage() {
     }
   }
 
+  const confirmResetDeck = async () => {
+    if (!deck) return
+
+    setIsResetting(true)
+    try {
+      const response = await fetch(`/api/decks/${id}/reset`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) throw new Error('Failed to reset deck')
+
+      const data = await response.json()
+      toast.success(`Reset ${data.resetCount} cards`)
+      setResetDeckDialogOpen(false)
+      await fetchDeck()
+    } catch (error) {
+      console.error('Error resetting deck:', error)
+      toast.error('Failed to reset deck')
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -387,9 +454,40 @@ export default function DeckDetailPage() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center text-sm font-medium mt-1">
-                <Library className="mr-2 h-4 w-4" />
-                {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium mt-2">
+                <div className="flex items-center text-muted-foreground">
+                  <Library className="mr-2 h-4 w-4" />
+                  {deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}
+                </div>
+                {deck.cards.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground/60">|</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-primary/10 px-1.5 text-xs font-semibold text-primary">
+                        {stats.due}
+                      </span>
+                      <span className="text-muted-foreground">due</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-blue-500/10 px-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        {stats.new}
+                      </span>
+                      <span className="text-muted-foreground">new</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-orange-500/10 px-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
+                        {stats.learning}
+                      </span>
+                      <span className="text-muted-foreground">learning</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-green-500/10 px-1.5 text-xs font-semibold text-green-600 dark:text-green-400">
+                        {stats.mature}
+                      </span>
+                      <span className="text-muted-foreground">mature</span>
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -423,6 +521,10 @@ export default function DeckDetailPage() {
                   <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
                     <Upload className="mr-2 h-4 w-4" />
                     Import Cards
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setResetDeckDialogOpen(true)}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset Progress
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setDeleteDeckDialogOpen(true)} className="text-destructive focus:text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
@@ -512,7 +614,20 @@ export default function DeckDetailPage() {
               onClick={() => handleEdit(card)}
             >
               <div className="mb-4">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Front</h4>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Front</h4>
+                  {(() => {
+                    const { label, isDue } = getCardDueLabel(card)
+                    return (
+                      <span className={cn(
+                        "text-xs",
+                        isDue ? "text-primary font-medium" : "text-muted-foreground/60"
+                      )}>
+                        {label}
+                      </span>
+                    )
+                  })()}
+                </div>
                 <p className="text-base leading-relaxed whitespace-pre-wrap">{card.front}</p>
               </div>
 
@@ -580,20 +695,31 @@ export default function DeckDetailPage() {
         onSuccess={fetchDeck}
       />
 
-      <DeleteConfirmDialog
+      <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={confirmDelete}
         title="Delete Card"
         description="Are you sure you want to delete this card? This action cannot be undone."
+        confirmText="Delete"
       />
 
-      <DeleteConfirmDialog
+      <ConfirmDialog
         open={deleteDeckDialogOpen}
         onOpenChange={setDeleteDeckDialogOpen}
         onConfirm={confirmDeleteDeck}
         title="Delete Deck"
         description={`Are you sure you want to delete "${deck?.name}"? This will also delete all cards in this deck. This action cannot be undone.`}
+        confirmText="Delete"
+      />
+
+      <ConfirmDialog
+        open={resetDeckDialogOpen}
+        onOpenChange={setResetDeckDialogOpen}
+        onConfirm={confirmResetDeck}
+        title="Reset Progress"
+        description={`Are you sure you want to reset all progress for "${deck?.name}"? All cards will be marked as new and due for review. This cannot be undone.`}
+        confirmText="Reset"
       />
     </div>
   )

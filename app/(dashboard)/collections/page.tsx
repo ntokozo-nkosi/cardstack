@@ -6,7 +6,7 @@ import { Plus, Trash2, Folder, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CreateCollectionDialog } from '@/components/create-collection-dialog'
-import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useCollections } from '@/hooks/use-collections'
@@ -162,12 +162,13 @@ export default function CollectionsPage() {
                 onOpenChange={setCreateDialogOpen}
             />
 
-            <DeleteConfirmDialog
+            <ConfirmDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
                 onConfirm={confirmDelete}
                 title="Delete Collection"
                 description={`Are you sure you want to delete "${selectedCollection?.name}"? The decks within the collection will NOT be deleted.`}
+                confirmText="Delete"
             />
         </div>
     )

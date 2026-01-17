@@ -10,12 +10,13 @@ export async function GET() {
     }
 
     const result = await query(`
-      SELECT 
+      SELECT
         d.id,
         d.name,
         d.description,
         d.created_at as "createdAt",
-        COUNT(c.id)::int as "_count"
+        COUNT(c.id)::int as "cardCount",
+        COUNT(c.id) FILTER (WHERE c.due_date IS NULL OR c.due_date <= CURRENT_TIMESTAMP)::int as "dueCount"
       FROM decks d
       LEFT JOIN cards c ON c.deck_id = d.id
       WHERE d.user_id = $1
@@ -23,9 +24,12 @@ export async function GET() {
       ORDER BY d.created_at DESC
     `, [user.id])
 
-    const decks = result.rows.map((row: { id: string; name: string; description: string | null; createdAt: Date; _count: number }) => ({
-      ...row,
-      _count: { cards: row._count }
+    const decks = result.rows.map((row: { id: string; name: string; description: string | null; createdAt: Date; cardCount: number; dueCount: number }) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      createdAt: row.createdAt,
+      _count: { cards: row.cardCount, due: row.dueCount }
     }))
 
     return NextResponse.json(decks)
