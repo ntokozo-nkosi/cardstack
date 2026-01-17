@@ -6,7 +6,7 @@ import { Plus, Play, Trash2, Library, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CreateDeckDialog } from '@/components/create-deck-dialog'
-import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useDecks } from '@/hooks/use-decks'
@@ -182,12 +182,13 @@ export default function DecksPage() {
         onOpenChange={setCreateDialogOpen}
       />
 
-      <DeleteConfirmDialog
+      <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={confirmDelete}
         title="Delete Deck"
         description={`Are you sure you want to delete "${selectedDeck?.name}"? This will also delete all cards in this deck. This action cannot be undone.`}
+        confirmText="Delete"
       />
     </div>
   )

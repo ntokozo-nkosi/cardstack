@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useChatStore } from '@/lib/stores/chat-store'
 import { toast } from 'sonner'
 
@@ -94,12 +94,13 @@ export function ChatList() {
         ))}
       </SidebarMenuSub>
 
-      <DeleteConfirmDialog
+      <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
         title="Delete conversation?"
         description="This will permanently delete this conversation and all its messages."
+        confirmText="Delete"
       />
     </>
   )

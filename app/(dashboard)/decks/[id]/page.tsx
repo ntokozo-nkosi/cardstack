@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload, Search, X } from 'lucide-react'
+import { ArrowLeft, Plus, Edit2, Trash2, Play, Pencil, Loader2, Library, FolderPlus, MoreHorizontal, Upload, Search, X, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/lib/stores/app-store'
@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { CreateCardDialog } from '@/components/create-card-dialog'
 import { EditCardDialog } from '@/components/edit-card-dialog'
-import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { AddToCollectionDialog } from '@/components/add-to-collection-dialog'
 import { ImportCardsDialog } from '@/components/import-cards-dialog'
 import { toast } from 'sonner'
@@ -67,6 +67,8 @@ export default function DeckDetailPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const [resetDeckDialogOpen, setResetDeckDialogOpen] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -316,6 +318,29 @@ export default function DeckDetailPage() {
     }
   }
 
+  const confirmResetDeck = async () => {
+    if (!deck) return
+
+    setIsResetting(true)
+    try {
+      const response = await fetch(`/api/decks/${id}/reset`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) throw new Error('Failed to reset deck')
+
+      const data = await response.json()
+      toast.success(`Reset ${data.resetCount} cards`)
+      setResetDeckDialogOpen(false)
+      await fetchDeck()
+    } catch (error) {
+      console.error('Error resetting deck:', error)
+      toast.error('Failed to reset deck')
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -497,6 +522,10 @@ export default function DeckDetailPage() {
                     <Upload className="mr-2 h-4 w-4" />
                     Import Cards
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setResetDeckDialogOpen(true)}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset Progress
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setDeleteDeckDialogOpen(true)} className="text-destructive focus:text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Deck
@@ -666,20 +695,31 @@ export default function DeckDetailPage() {
         onSuccess={fetchDeck}
       />
 
-      <DeleteConfirmDialog
+      <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={confirmDelete}
         title="Delete Card"
         description="Are you sure you want to delete this card? This action cannot be undone."
+        confirmText="Delete"
       />
 
-      <DeleteConfirmDialog
+      <ConfirmDialog
         open={deleteDeckDialogOpen}
         onOpenChange={setDeleteDeckDialogOpen}
         onConfirm={confirmDeleteDeck}
         title="Delete Deck"
         description={`Are you sure you want to delete "${deck?.name}"? This will also delete all cards in this deck. This action cannot be undone.`}
+        confirmText="Delete"
+      />
+
+      <ConfirmDialog
+        open={resetDeckDialogOpen}
+        onOpenChange={setResetDeckDialogOpen}
+        onConfirm={confirmResetDeck}
+        title="Reset Progress"
+        description={`Are you sure you want to reset all progress for "${deck?.name}"? All cards will be marked as new and due for review. This cannot be undone.`}
+        confirmText="Reset"
       />
     </div>
   )
