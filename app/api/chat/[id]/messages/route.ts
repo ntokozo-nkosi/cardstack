@@ -96,7 +96,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     // Create model with tools
     const tools = createToolsForUser(user.id)
     const model = new ChatOpenAI({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.2',
       temperature: 0.7,
     })
     const modelWithTools = model.bindTools(tools)

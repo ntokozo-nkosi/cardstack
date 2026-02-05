@@ -23,7 +23,7 @@ export function ChatInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 220)}px`
     }
   }, [input])
 
@@ -62,7 +62,7 @@ export function ChatInput({
         disabled={isDisabled}
         className="flex-1 resize-none bg-transparent px-4 py-3 pr-12 text-base placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
         rows={1}
-        style={{ minHeight: '48px', maxHeight: '200px' }}
+        style={{ minHeight: '53px', maxHeight: '220px' }}
       />
       <button
         onClick={handleSubmit}
