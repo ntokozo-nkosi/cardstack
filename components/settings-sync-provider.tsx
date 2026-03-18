@@ -12,6 +12,7 @@ export function SettingsSyncProvider({ children }: { children: React.ReactNode }
   const { theme, setTheme } = useTheme();
   const hasFetched = useRef(false);
   const isReconciling = useRef(false);
+  const pendingUpdates = useRef<Record<string, string>>({});
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch settings from DB on mount and reconcile with local state
@@ -52,14 +53,17 @@ export function SettingsSyncProvider({ children }: { children: React.ReactNode }
   const syncToApi = useCallback(
     (updates: Record<string, string>) => {
       if (!isSignedIn) return;
+      pendingUpdates.current = { ...pendingUpdates.current, ...updates };
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
       debounceTimer.current = setTimeout(async () => {
+        const payload = pendingUpdates.current;
+        pendingUpdates.current = {};
         try {
           await fetch("/api/settings", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updates),
+            body: JSON.stringify(payload),
           });
         } catch {
           // Silently fail — change is already applied locally

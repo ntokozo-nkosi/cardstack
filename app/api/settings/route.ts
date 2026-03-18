@@ -34,7 +34,13 @@ export async function PUT(request: Request) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: 'Invalid JSON body' },
+        { status: 400 }
+      )
+    }
     const validated: Record<string, string> = {}
 
     if (body.color_theme !== undefined) {
