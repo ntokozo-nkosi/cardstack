@@ -16,7 +16,11 @@ export function SettingsSyncProvider({ children }: { children: React.ReactNode }
 
   // Fetch settings from DB on mount and reconcile with local state
   useEffect(() => {
-    if (!isSignedIn || hasFetched.current) return;
+    if (!isSignedIn) {
+      hasFetched.current = false;
+      return;
+    }
+    if (hasFetched.current) return;
     hasFetched.current = true;
 
     (async () => {
