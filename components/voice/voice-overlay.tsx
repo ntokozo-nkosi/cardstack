@@ -162,6 +162,11 @@ export function VoiceOverlay({
             instructions,
             tools: VOICE_TOOL_DEFINITIONS,
             tool_choice: 'auto',
+            audio: {
+              output: {
+                speed: 0.8,
+              },
+            },
           },
         }))
       }
