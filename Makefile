@@ -1,24 +1,45 @@
-.PHONY: dev build migration migrate rollback reset db-reset
+.DEFAULT_GOAL := dev
 
-# Development
-dev:
-	doppler run -- npm run dev
+BUN := bun
+DOPPLER_RUN := doppler run --
+GOOSE_CMD := GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations
 
-build:
-	doppler run -- npm run build
+.PHONY: check-bun check-doppler dev build start lint migration migrate rollback reset hard-reset
+
+check-bun:
+	@command -v $(BUN) >/dev/null 2>&1 || { echo "Bun is required. Install it from https://bun.sh"; exit 1; }
+
+check-doppler:
+	@command -v doppler >/dev/null 2>&1 || { echo "Doppler CLI is required. Install it from https://docs.doppler.com/docs/cli"; exit 1; }
+
+# Application
+dev: check-bun check-doppler
+	$(DOPPLER_RUN) $(BUN) run dev
+
+build: check-bun check-doppler
+	$(DOPPLER_RUN) $(BUN) run build
+
+start: check-bun check-doppler
+	$(DOPPLER_RUN) $(BUN) run start
+
+lint: check-bun
+	$(BUN) run lint
 
 # Database migrations (uses DATABASE_URL_UNPOOLED for direct connection to avoid pooler issues)
-migration:
-	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations create $(name) sql'
+migration: check-doppler
+ifndef name
+	$(error usage: make migration name=your_migration_name)
+endif
+	$(DOPPLER_RUN) sh -c '$(GOOSE_CMD) create $(name) sql'
 
-migrate:
-	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations up'
+migrate: check-doppler
+	$(DOPPLER_RUN) sh -c '$(GOOSE_CMD) up'
 
-rollback:
-	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations down'
+rollback: check-doppler
+	$(DOPPLER_RUN) sh -c '$(GOOSE_CMD) down'
 
-reset:
-	doppler run -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations reset'
+reset: check-doppler
+	$(DOPPLER_RUN) sh -c '$(GOOSE_CMD) reset'
 
-hard-reset:
-	doppler run -- sh -c 'psql "$$DATABASE_URL_UNPOOLED" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"'
+hard-reset: check-doppler
+	$(DOPPLER_RUN) sh -c 'psql "$$DATABASE_URL_UNPOOLED" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"'
