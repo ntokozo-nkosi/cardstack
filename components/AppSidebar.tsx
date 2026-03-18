@@ -21,6 +21,7 @@ import { ChatList } from "@/components/chat/chat-list";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { SidebarFooter } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { cn } from "@/lib/utils";
 
 
@@ -165,7 +166,8 @@ export function AppSidebar() {
                 </span>
               </div>
             </div>
-            <div className="group-data-[collapsible=icon]:hidden shrink-0">
+            <div className="group-data-[collapsible=icon]:hidden shrink-0 flex items-center gap-1">
+              <ThemeSwitcher />
               <ModeToggle />
             </div>
           </div>
