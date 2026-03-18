@@ -46,8 +46,11 @@ A clean, simple flashcard app for creating and studying decks.
 This project uses a Makefile for common development tasks. All commands automatically handle Doppler secrets:
 
 ```bash
+make              # Start development server (default target)
 make dev          # Start development server
 make build        # Build the application
+make start        # Run the production server
+make lint         # Run ESLint with Doppler secrets loaded
 make migrate      # Apply database migrations
 make migration    # Create new migration (requires name=your_migration_name)
 make rollback     # Roll back the last migration
