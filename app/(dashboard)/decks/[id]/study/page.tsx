@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, RotateCcw, X, Check, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,29 +8,8 @@ import { Progress } from '@/components/ui/progress'
 import { Flashcard } from '@/components/flashcard'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ModeToggle } from '@/components/mode-toggle'
-
-interface Card {
-  id: string
-  front: string
-  back: string
-  lastResponse?: string
-  lastReviewedAt?: string
-  reviewCount?: number
-  // SM-2 fields
-  repetitions?: number
-  easeFactor?: number
-  intervalDays?: number
-  dueDate?: string
-  isNew?: boolean
-}
-
-type ReviewResponse = 'again' | 'hard' | 'good' | 'easy'
-
-interface Deck {
-  id: string
-  name: string
-  cards: Card[]
-}
+import { VoiceOverlay } from '@/components/voice/voice-overlay'
+import { useStudySession } from '@/hooks/use-study-session'
 
 const variants = {
   enter: (direction: number) => ({
@@ -56,166 +34,24 @@ const variants = {
 
 export default function StudyModePage() {
   const params = useParams()
-  const router = useRouter()
   const id = params.id as string
 
-  const [deck, setDeck] = useState<Deck | null>(null)
-  const [queue, setQueue] = useState<Card[]>([])
-  const [totalCardsInSession, setTotalCardsInSession] = useState(0)
-  const [completedCount, setCompletedCount] = useState(0)
-  const [isFlipped, setIsFlipped] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [direction, setDirection] = useState(0)
-  const [showAllCards, setShowAllCards] = useState(false)
-
-  const fetchDeck = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/decks/${id}`)
-      if (!response.ok) {
-        if (response.status === 404) {
-          router.push('/')
-          return
-        }
-        throw new Error('Failed to fetch deck')
-      }
-      const data = await response.json()
-      setDeck(data)
-
-      // Filter cards based on toggle
-      let cardsToStudy = data.cards
-
-      if (!showAllCards) {
-        // Show only cards that are due (due_date <= now)
-        const now = new Date()
-        cardsToStudy = data.cards.filter((card: Card) => {
-          if (!card.dueDate) return true  // New cards with no due date
-          return new Date(card.dueDate) <= now
-        })
-      }
-
-      // Sort: due cards first (by how overdue), then new cards
-      cardsToStudy.sort((a: Card, b: Card) => {
-        const aDue = a.dueDate ? new Date(a.dueDate) : new Date()
-        const bDue = b.dueDate ? new Date(b.dueDate) : new Date()
-        return aDue.getTime() - bDue.getTime()
-      })
-
-      setQueue(cardsToStudy)
-      setTotalCardsInSession(cardsToStudy.length)
-      setCompletedCount(0)
-    } catch (error) {
-      console.error('Error fetching deck:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [id, router, showAllCards])
-
-  useEffect(() => {
-    fetchDeck()
-  }, [fetchDeck])
-
-  const handleFlip = useCallback(() => {
-    setIsFlipped(!isFlipped)
-  }, [isFlipped])
-
-  const recordReview = useCallback(async (cardId: string, response: ReviewResponse) => {
-    try {
-      await fetch(`/api/cards/${cardId}/review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ response })
-      })
-    } catch (error) {
-      console.error('Failed to record review:', error)
-    }
-  }, [])
-
-  const handleResponse = useCallback((response: ReviewResponse) => {
-    const currentCard = queue[0]
-    if (!currentCard) return
-
-    // Fire and forget - don't block UI
-    recordReview(currentCard.id, response)
-
-    // "Again" inserts randomly within next few cards (review again in this session)
-    // "Hard/Good/Easy" removes from queue (SM-2 schedules for future)
-    if (response === 'again') {
-      setDirection(-1)
-      setTimeout(() => {
-        setQueue((prev) => {
-          const current = prev[0]
-          if (!current) return prev
-
-          // Adaptive random insertion based on queue size
-          let minPos = 3
-          let maxPos = 7
-
-          if (prev.length <= 5) {
-            // Small queue: insert near end
-            minPos = Math.max(1, prev.length - 2)
-            maxPos = prev.length
-          } else if (prev.length <= 15) {
-            // Medium queue: insert after 3-7 cards
-            minPos = 3
-            maxPos = 7
-          } else {
-            // Large queue: insert after 5-10 cards
-            minPos = 5
-            maxPos = 10
-          }
-
-          // Random position within range
-          const insertPosition = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos
-          const safePosition = Math.min(insertPosition, prev.length)
-
-          // Insert card at random position
-          return [
-            ...prev.slice(1, safePosition),
-            current,
-            ...prev.slice(safePosition)
-          ]
-        })
-        setIsFlipped(false)
-        setDirection(0)
-      }, 200)
-    } else {
-      setDirection(1)
-      setTimeout(() => {
-        setQueue((prev) => prev.slice(1))
-        setCompletedCount(prev => prev + 1)
-        setIsFlipped(false)
-        setDirection(0)
-      }, 200)
-    }
-  }, [queue, recordReview])
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (queue.length === 0) return
-
-      if (e.code === 'Space') {
-        e.preventDefault()
-        handleFlip()
-      } else if (isFlipped) {
-        if (e.key === '1' || e.key === 'ArrowLeft') {
-          handleResponse('again')
-        } else if (e.key === '2') {
-          handleResponse('hard')
-        } else if (e.key === '3') {
-          handleResponse('good')
-        } else if (e.key === '4' || e.key === 'ArrowRight') {
-          handleResponse('easy')
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [queue.length, isFlipped, handleFlip, handleResponse])
-
-  // Calculate progress based on cards reviewed in this session
-  const progress = totalCardsInSession > 0 ? (completedCount / totalCardsInSession) * 100 : 0
+  const {
+    deck,
+    queue,
+    currentCard,
+    totalCardsInSession,
+    completedCount,
+    isFlipped,
+    loading,
+    direction,
+    showAllCards,
+    progress,
+    setShowAllCards,
+    handleFlip,
+    handleResponse,
+    fetchDeck,
+  } = useStudySession({ deckId: id })
 
   if (loading) {
     return (
@@ -310,8 +146,6 @@ export default function StudyModePage() {
       </div>
     )
   }
-
-  const currentCard = queue[0]
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col h-[calc(100vh-6rem)]">
@@ -462,6 +296,15 @@ export default function StudyModePage() {
           </Button>
         </div>
       </footer>
+
+      {/* Voice Mode Overlay */}
+      <VoiceOverlay
+        currentCard={currentCard}
+        isFlipped={isFlipped}
+        queueLength={queue.length}
+        onFlip={handleFlip}
+        onResponse={handleResponse}
+      />
     </div>
   )
 }
