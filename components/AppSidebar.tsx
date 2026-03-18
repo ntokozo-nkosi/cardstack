@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Layers, FolderOpen, SquareStack, Bot, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Layers, FolderOpen, SquareStack, Bot, Plus, Settings } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -21,6 +21,7 @@ import { ChatList } from "@/components/chat/chat-list";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { SidebarFooter } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { cn } from "@/lib/utils";
 
 
@@ -35,6 +36,7 @@ export function AppSidebar() {
   const isDecksActive = pathname?.startsWith('/decks') || pathname === '/' || false;
   const isFlashcardsActive = pathname?.startsWith('/flashcards') || false;
   const isChatActive = pathname?.startsWith('/chat') || false;
+  const isSettingsActive = pathname?.startsWith('/settings') || false;
 
   // Only expand chat section if we're on a chat page
   const [chatOpen, setChatOpen] = useState(isChatActive);
@@ -141,6 +143,17 @@ export function AppSidebar() {
                     <span className="text-sm group-data-[collapsible=icon]:hidden">Collections</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => router.push('/settings')}
+                    isActive={isSettingsActive}
+                    className="w-full px-3 py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-primary rounded-lg transition-colors"
+                    tooltip="Settings"
+                  >
+                    <Settings size={16} className="shrink-0" />
+                    <span className="text-sm group-data-[collapsible=icon]:hidden">Settings</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -165,7 +178,8 @@ export function AppSidebar() {
                 </span>
               </div>
             </div>
-            <div className="group-data-[collapsible=icon]:hidden shrink-0">
+            <div className="group-data-[collapsible=icon]:hidden shrink-0 flex items-center gap-1">
+              <ThemeSwitcher />
               <ModeToggle />
             </div>
           </div>
