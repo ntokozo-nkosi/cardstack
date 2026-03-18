@@ -61,7 +61,7 @@ export function executeToolCall(
     case 'rate_card': {
       const { rating } = JSON.parse(args)
       callbacks.onRate(rating as ReviewResponse)
-      return `Rated "${rating}". Moving to next card.`
+      return `Rated "${rating}". Say nothing and wait silently — the next card context will arrive automatically.`
     }
     case 'end_session':
       callbacks.onEnd()

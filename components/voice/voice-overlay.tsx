@@ -31,6 +31,8 @@ export function VoiceOverlay({
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const dcRef = useRef<RTCDataChannel | null>(null)
   const prevCardIdRef = useRef<string | undefined>(undefined)
+  const responseActiveRef = useRef(false)
+  const pendingCardContextRef = useRef<string | null>(null)
   const isMobile = useIsMobile()
 
   // Keep callbacks in a ref so the data channel handler always sees latest props
@@ -68,9 +70,15 @@ export function VoiceOverlay({
     }
   }, [])
 
-  /** Send a conversation message and trigger a response */
+  /** Send a conversation message and trigger a response, queuing if one is already active */
   const sendMessage = useCallback(
     (text: string) => {
+      if (responseActiveRef.current) {
+        // Queue until the current response finishes
+        pendingCardContextRef.current = text
+        return
+      }
+      responseActiveRef.current = true
       sendEvent({
         type: 'conversation.item.create',
         item: {
@@ -83,6 +91,16 @@ export function VoiceOverlay({
     },
     [sendEvent]
   )
+
+  /** Flush any queued card context after a response completes */
+  const flushPendingContext = useCallback(() => {
+    responseActiveRef.current = false
+    const pending = pendingCardContextRef.current
+    if (pending) {
+      pendingCardContextRef.current = null
+      sendMessage(pending)
+    }
+  }, [sendMessage])
 
   const connect = useCallback(async () => {
     if (voiceState === 'connecting' || voiceState === 'connected') {
@@ -112,8 +130,14 @@ export function VoiceOverlay({
         audioEl.srcObject = e.streams[0]
       }
 
-      // 4. Get microphone and add track
-      const ms = await navigator.mediaDevices.getUserMedia({ audio: true })
+      // 4. Get microphone with echo cancellation to prevent agent voice feedback
+      const ms = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
       ms.getTracks().forEach((track) => pc.addTrack(track, ms))
 
       // 5. Create data channel for events
@@ -151,6 +175,14 @@ export function VoiceOverlay({
           dc.send(JSON.stringify({ type: 'response.create' }))
         }
 
+        // Track response lifecycle
+        if (event.type === 'response.created') {
+          responseActiveRef.current = true
+        }
+        if (event.type === 'response.done') {
+          flushPendingContext()
+        }
+
         // Handle tool calls
         if (event.type === 'response.function_call_arguments.done') {
           const result = executeToolCall(
@@ -166,7 +198,13 @@ export function VoiceOverlay({
               output: result,
             },
           })
-          sendEvent({ type: 'response.create' })
+          // Only trigger response.create for non-rate tools.
+          // For rate_card, the next card context from the useEffect
+          // will send response.create — avoids the agent speaking
+          // before it has the next card.
+          if (event.name !== 'rate_card') {
+            sendEvent({ type: 'response.create' })
+          }
         }
 
         if (event.type === 'error') {
@@ -213,7 +251,7 @@ export function VoiceOverlay({
       toast.error(message)
       setVoiceState('idle')
     }
-  }, [voiceState, disconnect, currentCard, queueLength, sendEvent])
+  }, [voiceState, disconnect, currentCard, queueLength, sendEvent, flushPendingContext])
 
   // Send updated card context when current card changes
   useEffect(() => {
