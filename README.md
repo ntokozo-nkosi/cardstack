@@ -2,6 +2,8 @@
 
 A clean, simple flashcard app for creating and studying decks.
 
+This project uses Bun as its package manager and script runner.
+
 ## Features
 
 - **Deck Management**: Create, edit, and delete flashcard decks
@@ -21,12 +23,13 @@ A clean, simple flashcard app for creating and studying decks.
 ## Setup
 
 1. **Prerequisites**
+   - Install [Bun](https://bun.sh)
    - Install [Doppler CLI](https://docs.doppler.com/docs/cli) and setup your account
    - This project uses Doppler for managing secrets and environment variables
 
 2. **Install dependencies**
    ```bash
-   npm install
+   bun install
    ```
 
 3. **Run database migrations**
@@ -43,14 +46,14 @@ A clean, simple flashcard app for creating and studying decks.
 
 ## Makefile Commands
 
-This project uses a Makefile for common development tasks. All commands automatically handle Doppler secrets:
+This project uses a Makefile for common development tasks. Commands that need app or database secrets run through Doppler automatically:
 
 ```bash
 make              # Start development server (default target)
 make dev          # Start development server
 make build        # Build the application
 make start        # Run the production server
-make lint         # Run ESLint with Doppler secrets loaded
+make lint         # Run ESLint with Bun
 make migrate      # Apply database migrations
 make migration    # Create new migration (requires name=your_migration_name)
 make rollback     # Roll back the last migration

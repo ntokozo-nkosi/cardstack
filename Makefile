@@ -1,25 +1,29 @@
 .DEFAULT_GOAL := dev
 
+BUN := bun
 DOPPLER_RUN := doppler run --
 GOOSE_CMD := GOOSE_DRIVER=postgres GOOSE_DBSTRING=$$DATABASE_URL_UNPOOLED goose -dir database/migrations
 
-.PHONY: check-doppler dev build start lint migration migrate rollback reset hard-reset
+.PHONY: check-bun check-doppler dev build start lint migration migrate rollback reset hard-reset
+
+check-bun:
+	@command -v $(BUN) >/dev/null 2>&1 || { echo "Bun is required. Install it from https://bun.sh"; exit 1; }
 
 check-doppler:
 	@command -v doppler >/dev/null 2>&1 || { echo "Doppler CLI is required. Install it from https://docs.doppler.com/docs/cli"; exit 1; }
 
 # Application
-dev: check-doppler
-	$(DOPPLER_RUN) npm run dev
+dev: check-bun check-doppler
+	$(DOPPLER_RUN) $(BUN) run dev
 
-build: check-doppler
-	$(DOPPLER_RUN) npm run build
+build: check-bun check-doppler
+	$(DOPPLER_RUN) $(BUN) run build
 
-start: check-doppler
-	$(DOPPLER_RUN) npm run start
+start: check-bun check-doppler
+	$(DOPPLER_RUN) $(BUN) run start
 
-lint: check-doppler
-	$(DOPPLER_RUN) npm run lint
+lint: check-bun
+	$(BUN) run lint
 
 # Database migrations (uses DATABASE_URL_UNPOOLED for direct connection to avoid pooler issues)
 migration: check-doppler

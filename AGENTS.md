@@ -12,12 +12,18 @@ This project uses **Doppler CLI** for secrets management. All environment variab
 
 ## Development Commands
 
-All commands use Doppler to inject environment variables:
+Common development commands:
 
 ```bash
 make dev          # Start development server (uses Turbopack)
 make build        # Build for production (uses Turbopack)
-npm run lint      # Run ESLint
+make lint         # Run ESLint
+```
+
+Install dependencies with Bun:
+
+```bash
+bun install
 ```
 
 ## Database Management
