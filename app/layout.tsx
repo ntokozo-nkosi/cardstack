@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider"
 import { ColorThemeProvider } from "@/components/theme-color-provider"
+import { SettingsSyncProvider } from "@/components/settings-sync-provider"
 import { Toaster } from "@/components/ui/sonner";
 
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-sans' });
@@ -48,8 +49,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ColorThemeProvider>
-              {children}
-              <Toaster />
+              <SettingsSyncProvider>
+                {children}
+                <Toaster />
+              </SettingsSyncProvider>
             </ColorThemeProvider>
           </ThemeProvider>
         </body>

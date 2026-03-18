@@ -25,3 +25,5 @@ export type ColorThemeId = (typeof COLOR_THEMES)[number]["id"];
 
 export const DEFAULT_COLOR_THEME: ColorThemeId = "default";
 export const COLOR_THEME_STORAGE_KEY = "cardstack-color-theme";
+export const VALID_MODES = ["light", "dark", "system"] as const;
+export type Mode = (typeof VALID_MODES)[number];

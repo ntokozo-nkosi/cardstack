@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Layers, FolderOpen, SquareStack, Bot, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Layers, FolderOpen, SquareStack, Bot, Plus, Settings } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -36,6 +36,7 @@ export function AppSidebar() {
   const isDecksActive = pathname?.startsWith('/decks') || pathname === '/' || false;
   const isFlashcardsActive = pathname?.startsWith('/flashcards') || false;
   const isChatActive = pathname?.startsWith('/chat') || false;
+  const isSettingsActive = pathname?.startsWith('/settings') || false;
 
   // Only expand chat section if we're on a chat page
   const [chatOpen, setChatOpen] = useState(isChatActive);
@@ -140,6 +141,17 @@ export function AppSidebar() {
                   >
                     <FolderOpen size={16} className="shrink-0" />
                     <span className="text-sm group-data-[collapsible=icon]:hidden">Collections</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => router.push('/settings')}
+                    isActive={isSettingsActive}
+                    className="w-full px-3 py-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-primary rounded-lg transition-colors"
+                    tooltip="Settings"
+                  >
+                    <Settings size={16} className="shrink-0" />
+                    <span className="text-sm group-data-[collapsible=icon]:hidden">Settings</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
