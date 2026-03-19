@@ -185,8 +185,8 @@ export default function StudyModePage() {
       </header>
 
       {/* Main Card Area */}
-      <main className="flex-1 flex flex-col items-center justify-center w-full relative min-h-0">
-        <div className="w-full max-w-2xl aspect-auto sm:aspect-[3/2] h-full max-h-[60vh] sm:max-h-none relative perspective-1000">
+      <main className="flex-1 flex flex-col items-center justify-center w-full relative min-h-[300px] sm:min-h-[400px]">
+        <div className="w-full max-w-2xl aspect-[3/2] relative perspective-1000">
           <AnimatePresence mode="popLayout" custom={direction}>
             {currentCard && (
               <motion.div
