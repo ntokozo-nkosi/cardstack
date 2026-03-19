@@ -22,7 +22,6 @@ interface VoiceOverlayProps {
 
 export function VoiceOverlay({
   currentCard,
-  isFlipped,
   queueLength,
   onFlip,
   onResponse,
@@ -318,7 +317,7 @@ export function VoiceOverlay({
         fixed z-50 rounded-full shadow-lg transition-all duration-200
         ${
           isMobile
-            ? `bottom-6 left-1/2 -translate-x-1/2 h-14 w-14 ${isFlipped ? 'mb-20' : ''}`
+            ? 'bottom-4 left-1/2 -translate-x-1/2 h-14 w-14'
             : 'bottom-6 right-6 h-12 w-12'
         }
         ${

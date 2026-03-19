@@ -242,7 +242,7 @@ export default function StudyModePage() {
       </main>
 
       {/* Footer / Controls */}
-      <footer className="mt-8 mb-4">
+      <footer className="mt-4 sm:mt-8 pb-24 sm:pb-0 mb-4">
         <div className="max-w-2xl mx-auto grid grid-cols-4 gap-2 sm:gap-3 transition-all duration-300"
           style={{
             opacity: isFlipped ? 1 : 0.5,
