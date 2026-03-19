@@ -241,8 +241,8 @@ export default function StudyModePage() {
         </div>
       </main>
 
-      {/* Footer / Controls */}
-      <footer className="mt-4 sm:mt-8 pb-24 sm:pb-0 mb-4">
+      {/* Footer / Controls — fixed to bottom on mobile so mic + buttons stay together */}
+      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-background px-4 pb-4 pt-2 sm:static sm:mt-8 sm:mb-4 sm:px-0 sm:pb-0 sm:pt-0 sm:bg-transparent">
         <div className="max-w-2xl mx-auto grid grid-cols-4 gap-2 sm:gap-3 transition-all duration-300"
           style={{
             opacity: isFlipped ? 1 : 0.5,
@@ -295,16 +295,28 @@ export default function StudyModePage() {
             <span className="text-[10px] sm:text-xs opacity-80 font-normal">Too easy</span>
           </Button>
         </div>
+
+        {/* Mic button — inside footer so it moves with rating buttons */}
+        <div className="flex justify-center mt-6 sm:hidden">
+          <VoiceOverlay
+            currentCard={currentCard}
+            queueLength={queue.length}
+            onFlip={handleFlip}
+            onResponse={handleResponse}
+            inline
+          />
+        </div>
       </footer>
 
-      {/* Voice Mode Overlay */}
-      <VoiceOverlay
-        currentCard={currentCard}
-        isFlipped={isFlipped}
-        queueLength={queue.length}
-        onFlip={handleFlip}
-        onResponse={handleResponse}
-      />
+      {/* Voice Mode Overlay — desktop only (fixed position) */}
+      <div className="hidden sm:block">
+        <VoiceOverlay
+          currentCard={currentCard}
+          queueLength={queue.length}
+          onFlip={handleFlip}
+          onResponse={handleResponse}
+        />
+      </div>
     </div>
   )
 }

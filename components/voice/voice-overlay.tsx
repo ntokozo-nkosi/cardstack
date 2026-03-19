@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Mic, MicOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useIsMobile } from '@/hooks/use-mobile'
 import { toast } from 'sonner'
 import { VOICE_TOOL_DEFINITIONS, executeToolCall } from '@/lib/voice/tools'
 import { VOICE_AGENT_INSTRUCTIONS, buildCardContext } from '@/lib/voice/instructions'
@@ -14,10 +13,12 @@ type VoiceState = 'idle' | 'connecting' | 'connected' | 'error'
 
 interface VoiceOverlayProps {
   currentCard: Card | undefined
-  isFlipped: boolean
+  isFlipped?: boolean
   queueLength: number
   onFlip: () => void
   onResponse: (response: ReviewResponse) => void
+  /** Render as inline button (inside footer) instead of fixed position */
+  inline?: boolean
 }
 
 export function VoiceOverlay({
@@ -25,6 +26,7 @@ export function VoiceOverlay({
   queueLength,
   onFlip,
   onResponse,
+  inline = false,
 }: VoiceOverlayProps) {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle')
   const pcRef = useRef<RTCPeerConnection | null>(null)
@@ -32,7 +34,6 @@ export function VoiceOverlay({
   const prevCardIdRef = useRef<string | undefined>(undefined)
   const responseActiveRef = useRef(false)
   const pendingCardContextRef = useRef<string | null>(null)
-  const isMobile = useIsMobile()
 
   // Keep callbacks in a ref so the data channel handler always sees latest props
   const callbacksRef = useRef<VoiceToolCallbacks>({
@@ -314,11 +315,11 @@ export function VoiceOverlay({
       onClick={connect}
       aria-label={isActive ? 'Disconnect voice mode' : 'Start voice mode'}
       className={`
-        fixed z-50 rounded-full shadow-lg transition-all duration-200
+        rounded-full shadow-lg transition-all duration-200
         ${
-          isMobile
-            ? 'bottom-4 left-1/2 -translate-x-1/2 h-14 w-14'
-            : 'bottom-6 right-6 h-12 w-12'
+          inline
+            ? 'h-14 w-14'
+            : 'fixed z-50 bottom-6 right-6 h-12 w-12'
         }
         ${
           voiceState === 'connected'
@@ -335,9 +336,9 @@ export function VoiceOverlay({
         <span className="absolute inset-0 rounded-full animate-ping bg-primary/40" />
       )}
       {isActive ? (
-        <Mic className={isMobile ? 'h-6 w-6' : 'h-5 w-5'} />
+        <Mic className={inline ? 'h-6 w-6' : 'h-5 w-5'} />
       ) : (
-        <MicOff className={isMobile ? 'h-6 w-6' : 'h-5 w-5'} />
+        <MicOff className={inline ? 'h-6 w-6' : 'h-5 w-5'} />
       )}
     </Button>
   )
