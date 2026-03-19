@@ -32,7 +32,7 @@ export function Flashcard({
 
   return (
     <div
-      className="w-full h-64 sm:h-80 md:h-96 cursor-pointer select-none"
+      className="w-full h-full min-h-48 sm:h-80 md:h-96 cursor-pointer select-none"
       onClick={handleClick}
       style={{ perspective: '1000px' }}
     >
