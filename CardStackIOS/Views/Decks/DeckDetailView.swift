@@ -7,84 +7,96 @@ struct DeckDetailView: View {
     @State private var showCreateCard = false
     @State private var editingCard: Card?
     @State private var pendingDelete: Card?
-    @State private var navigateToBrowse = false
+    @State private var navigateToStudy = false
 
     private var sortedCards: [Card] {
         deck.cards.sorted { $0.order < $1.order }
     }
 
+    private let columns = [
+        GridItem(.adaptive(minimum: 280, maximum: 420), spacing: 12)
+    ]
+
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text(deck.name)
+                    .font(.title.weight(.bold))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+
                 if let detail = deck.detail, !detail.isEmpty {
                     Text(detail)
-                        .font(.subheadline)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 20)
                 }
+
+                statsRow
+                    .padding(.horizontal, 20)
 
                 Button {
-                    navigateToBrowse = true
+                    navigateToStudy = true
                 } label: {
-                    Label("Browse Cards", systemImage: "play.fill")
+                    Text("Study Deck")
                         .font(.headline)
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 14)
+                        .background(Color("BrandPrimary"), in: Capsule())
+                        .opacity(sortedCards.isEmpty ? 0.5 : 1)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                .listRowBackground(Color.clear)
-                .disabled(deck.cards.isEmpty)
-            }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
+                .padding(.top, 2)
+                .padding(.bottom, 6)
+                .disabled(sortedCards.isEmpty)
 
-            Section("Cards (\(deck.cards.count))") {
                 if sortedCards.isEmpty {
-                    Text("No cards yet. Tap + to add one.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    EmptyStateView(
+                        systemImage: "rectangle.stack",
+                        title: "No cards yet",
+                        message: "Tap + to add your first flashcard."
+                    )
+                    .frame(minHeight: 220)
                 } else {
-                    ForEach(sortedCards) { card in
-                        Button {
-                            editingCard = card
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(card.front)
-                                    .font(.subheadline.weight(.medium))
-                                    .lineLimit(1)
-                                    .foregroundStyle(.primary)
-                                Text(card.back)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                            .padding(.vertical, 2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                pendingDelete = card
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(sortedCards) { card in
+                            CardPreviewTile(
+                                card: card,
+                                onTap: { editingCard = card },
+                                onDelete: { pendingDelete = card }
+                            )
                         }
                     }
+                    .padding(.horizontal, 16)
                 }
             }
+            .padding(.bottom, 100)
         }
-        .navigationTitle(deck.name)
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showCreateCard = true
-                } label: {
-                    Image(systemName: "plus")
-                }
+        .fontDesign(.monospaced)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay(alignment: .bottomTrailing) {
+            Button {
+                showCreateCard = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(Color("BrandPrimary"), in: Circle())
+                    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 4)
             }
+            .buttonStyle(.plain)
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
+            .accessibilityLabel("New Card")
         }
-        .navigationDestination(isPresented: $navigateToBrowse) {
+        .navigationDestination(isPresented: $navigateToStudy) {
             BrowseView(deck: deck)
         }
         .sheet(isPresented: $showCreateCard) {
@@ -108,6 +120,30 @@ struct DeckDetailView: View {
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { _ in
             Text("This cannot be undone.")
+        }
+    }
+
+    private var statsRow: some View {
+        HStack(spacing: 10) {
+            Text("\(sortedCards.count) \(sortedCards.count == 1 ? "card" : "cards")")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Text("·")
+                .font(.footnote)
+                .foregroundStyle(.tertiary)
+
+            HStack(spacing: 6) {
+                Text("\(sortedCards.count)")
+                    .font(.footnote.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 3)
+                    .foregroundStyle(Color("BrandPrimary"))
+                    .background(Color("BrandPrimary").opacity(0.12), in: Capsule())
+                Text("due")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

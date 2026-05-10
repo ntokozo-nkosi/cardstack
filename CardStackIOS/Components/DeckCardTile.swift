@@ -13,21 +13,21 @@ struct DeckCardTile: View {
             Button(action: onView) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(deck.name)
-                        .font(.headline.weight(.semibold))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                        .font(.title3.weight(.bold))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     if let detail = deck.detail, !detail.isEmpty {
                         Text(detail)
-                            .font(.subheadline)
+                            .font(.callout)
                             .foregroundStyle(.secondary)
-                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
                         Text("No description provided.")
-                            .font(.subheadline)
+                            .font(.callout)
                             .italic()
                             .foregroundStyle(.tertiary)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -35,7 +35,7 @@ struct DeckCardTile: View {
 
                     Spacer(minLength: 8)
                 }
-                .padding(16)
+                .padding(18)
                 .frame(maxWidth: .infinity, minHeight: 140, alignment: .topLeading)
                 .contentShape(Rectangle())
             }
@@ -46,9 +46,9 @@ struct DeckCardTile: View {
             HStack(spacing: 8) {
                 HStack(spacing: 6) {
                     Text("\(dueCount)")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
+                        .font(.footnote.weight(.semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 3)
                         .background(
                             Capsule()
                                 .fill(Color("BrandPrimary").opacity(0.12))
@@ -60,7 +60,7 @@ struct DeckCardTile: View {
                         .foregroundStyle(Color("BrandPrimary"))
 
                     Text(dueCount == 1 ? "card due" : "cards due")
-                        .font(.caption)
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
 
@@ -68,19 +68,19 @@ struct DeckCardTile: View {
 
                 Button(action: onView) {
                     Text("View")
-                        .font(.caption.weight(.medium))
+                        .font(.footnote.weight(.medium))
                 }
                 .buttonStyle(.bordered)
-                .controlSize(.small)
+                .controlSize(.regular)
 
                 if dueCount > 0 {
                     Button(action: onStudy) {
                         Label("Study", systemImage: "play.fill")
-                            .font(.caption.weight(.semibold))
+                            .font(.footnote.weight(.semibold))
                             .labelStyle(.titleAndIcon)
                     }
                     .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                 }
 
                 Menu {

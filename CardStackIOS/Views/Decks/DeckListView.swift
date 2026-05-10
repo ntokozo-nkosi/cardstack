@@ -48,24 +48,21 @@ struct DeckListView: View {
         }
         .navigationTitle("My Decks")
         .fontDesign(.monospaced)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showCreateSheet = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus")
-                            .font(.subheadline.weight(.bold))
-                        Text("New Deck")
-                            .font(.subheadline.weight(.semibold))
-                    }
+        .overlay(alignment: .bottomTrailing) {
+            Button {
+                showCreateSheet = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.semibold))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color("BrandPrimary"), in: Capsule())
-                }
-                .buttonStyle(.plain)
+                    .frame(width: 56, height: 56)
+                    .background(Color("BrandPrimary"), in: Circle())
+                    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 4)
             }
+            .buttonStyle(.plain)
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
+            .accessibilityLabel("New Deck")
         }
         .navigationDestination(item: $viewTarget) { deck in
             DeckDetailView(deck: deck)
