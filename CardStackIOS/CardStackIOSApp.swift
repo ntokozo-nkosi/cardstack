@@ -30,6 +30,7 @@ struct CardStackIOSApp: App {
                 .modelContainer(container)
                 .environment(\.appEnvironment, env)
                 .tint(Color("BrandPrimary"))
+                .preferredColorScheme(.light)
                 .task {
                     SeedData.runIfNeeded(env: env)
                 }
