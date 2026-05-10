@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DeckDetailView: View {
     @Environment(\.appEnvironment) private var env
+    @Environment(\.dismiss) private var dismiss
     let deck: Deck
 
     @State private var showCreateCard = false
@@ -20,12 +21,15 @@ struct DeckDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                backButton
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+
                 Text(deck.name)
                     .font(.title.weight(.bold))
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                     .padding(.horizontal, 20)
-                    .padding(.top, 8)
 
                 if let detail = deck.detail, !detail.isEmpty {
                     Text(detail)
@@ -78,8 +82,8 @@ struct DeckDetailView: View {
             .padding(.bottom, 100)
         }
         .fontDesign(.monospaced)
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .bottomTrailing) {
             Button {
                 showCreateCard = true
@@ -97,7 +101,7 @@ struct DeckDetailView: View {
             .accessibilityLabel("New Card")
         }
         .navigationDestination(isPresented: $navigateToStudy) {
-            BrowseView(deck: deck)
+            StudyView(deck: deck)
         }
         .sheet(isPresented: $showCreateCard) {
             CardEditorSheet(deck: deck, editing: nil)
@@ -120,6 +124,23 @@ struct DeckDetailView: View {
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { _ in
             Text("This cannot be undone.")
+        }
+    }
+
+    private var backButton: some View {
+        HStack {
+            Button {
+                dismiss()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.left")
+                    Text("Back to Decks")
+                }
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.primary)
+            }
+            .buttonStyle(.plain)
+            Spacer()
         }
     }
 

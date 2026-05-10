@@ -68,7 +68,7 @@ struct DeckListView: View {
             DeckDetailView(deck: deck)
         }
         .navigationDestination(item: $studyTarget) { deck in
-            BrowseView(deck: deck)
+            StudyView(deck: deck)
         }
         .sheet(isPresented: $showCreateSheet) {
             DeckEditorSheet(editing: nil, defaultCollection: nil)

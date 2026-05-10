@@ -82,18 +82,6 @@ struct DeckCardTile: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
                 }
-
-                Menu {
-                    Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
-                }
-                .menuStyle(.button)
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -106,5 +94,11 @@ struct DeckCardTile: View {
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(Color(.separator).opacity(0.6), lineWidth: 0.5)
         )
+        .contextMenu {
+            Button("Delete Deck", systemImage: "trash", role: .destructive, action: onDelete)
+        }
+        .accessibilityAction(named: Text("Delete Deck")) {
+            onDelete()
+        }
     }
 }
