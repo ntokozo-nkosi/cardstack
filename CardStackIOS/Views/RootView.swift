@@ -1,14 +1,17 @@
 import SwiftUI
 
 struct RootView: View {
+    @State private var selection: Int = 1
+
     var body: some View {
-        TabView {
+        TabView(selection: $selection) {
             NavigationStack {
                 CollectionListView()
             }
             .tabItem {
                 Label("Collections", systemImage: "square.stack.3d.up")
             }
+            .tag(0)
 
             NavigationStack {
                 DeckListView()
@@ -16,6 +19,7 @@ struct RootView: View {
             .tabItem {
                 Label("Decks", systemImage: "rectangle.stack")
             }
+            .tag(1)
 
             NavigationStack {
                 CardListView()
@@ -23,6 +27,7 @@ struct RootView: View {
             .tabItem {
                 Label("Cards", systemImage: "square.on.square")
             }
+            .tag(2)
         }
     }
 }
