@@ -8,8 +8,8 @@ struct StudyView: View {
     @State private var flipped: Bool = false
     @State private var showExitConfirmation: Bool = false
 
-    private var hasProgress: Bool {
-        !isComplete && totalCount > 0 && (currentIndex > 0 || flipped)
+    private var isActiveSession: Bool {
+        totalCount > 0 && !isComplete
     }
 
     private var sortedCards: [Card] {
@@ -64,25 +64,25 @@ struct StudyView: View {
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
-            NavigationPopGuard.shared.shouldAllowPop = { !hasProgress }
+            NavigationPopGuard.shared.shouldAllowPop = { !isActiveSession }
             NavigationPopGuard.shared.onBlockedPop = { showExitConfirmation = true }
         }
         .onDisappear {
             NavigationPopGuard.shared.shouldAllowPop = nil
             NavigationPopGuard.shared.onBlockedPop = nil
         }
-        .alert("Leave study session?", isPresented: $showExitConfirmation) {
+        .alert("End study session?", isPresented: $showExitConfirmation) {
             Button("Keep Studying", role: .cancel) {}
-            Button("Leave", role: .destructive) { dismiss() }
+            Button("End Session", role: .destructive) { dismiss() }
         } message: {
-            Text("Your progress in this session won't be saved.")
+            Text("Are you sure you want to end this session?")
         }
     }
 
     private var topBar: some View {
         HStack(alignment: .top, spacing: 16) {
             Button {
-                if hasProgress {
+                if isActiveSession {
                     showExitConfirmation = true
                 } else {
                     dismiss()

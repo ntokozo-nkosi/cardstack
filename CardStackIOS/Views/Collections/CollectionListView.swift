@@ -3,25 +3,37 @@ import SwiftUI
 
 struct CollectionListView: View {
     @Environment(\.appEnvironment) private var env
-    @Query(sort: \DeckCollection.createdAt, order: .reverse) private var collections: [DeckCollection]
+    @Query(sort: \DeckCollection.createdAt, order: .forward) private var collections: [DeckCollection]
 
     @State private var showCreateSheet = false
     @State private var editingCollection: DeckCollection?
     @State private var pendingDelete: DeckCollection?
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Collections")
+                    .font(.largeTitle.weight(.bold))
+                Text("Group your decks into related collections")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .fontDesign(.monospaced)
+
             if collections.isEmpty {
                 EmptyStateView(
                     systemImage: "square.stack.3d.up",
                     title: "No collections yet",
                     message: "Collections let you group related decks. Tap + to create one."
                 )
+                .fontDesign(.monospaced)
             } else {
                 List {
                     ForEach(collections) { collection in
                         NavigationLink(value: collection) {
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text(collection.name)
                                     .font(.headline)
                                 if let detail = collection.detail, !detail.isEmpty {
@@ -51,17 +63,26 @@ struct CollectionListView: View {
                         }
                     }
                 }
+                .listStyle(.plain)
+                .fontDesign(.monospaced)
             }
         }
-        .navigationTitle("Collections")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showCreateSheet = true
-                } label: {
-                    Image(systemName: "plus")
-                }
+        .toolbar(.hidden, for: .navigationBar)
+        .overlay(alignment: .bottomTrailing) {
+            Button {
+                showCreateSheet = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(Color("BrandPrimary"), in: Circle())
+                    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 4)
             }
+            .buttonStyle(.plain)
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
+            .accessibilityLabel("New Collection")
         }
         .navigationDestination(for: DeckCollection.self) { collection in
             CollectionDetailView(collection: collection)

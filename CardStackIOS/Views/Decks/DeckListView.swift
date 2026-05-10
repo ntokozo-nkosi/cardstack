@@ -16,12 +16,16 @@ struct DeckListView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("My Decks")
+                    .font(.largeTitle.weight(.bold))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+
                 Text("Manage your flashcard collections and study progress")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
-                    .padding(.top, 4)
 
                 if decks.isEmpty {
                     EmptyStateView(
@@ -42,12 +46,13 @@ struct DeckListView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    .padding(.top, 4)
                 }
             }
             .padding(.bottom, 32)
+            .fontDesign(.monospaced)
         }
-        .navigationTitle("My Decks")
-        .fontDesign(.monospaced)
+        .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .bottomTrailing) {
             Button {
                 showCreateSheet = true

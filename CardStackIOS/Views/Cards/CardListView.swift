@@ -16,13 +16,25 @@ struct CardListView: View {
     @State private var editingCard: Card?
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("All Cards")
+                    .font(.largeTitle.weight(.bold))
+                Text("Every flashcard across all your decks")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .fontDesign(.monospaced)
+
             if allCards.isEmpty {
                 EmptyStateView(
                     systemImage: "square.on.square",
                     title: "No cards yet",
                     message: "Create a deck and add cards to see them all here."
                 )
+                .fontDesign(.monospaced)
             } else {
                 List {
                     ForEach(groupedByDeck, id: \.deck?.id) { group in
@@ -49,9 +61,11 @@ struct CardListView: View {
                         }
                     }
                 }
+                .listStyle(.plain)
+                .fontDesign(.monospaced)
             }
         }
-        .navigationTitle("All Cards")
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $editingCard) { card in
             if let deck = card.deck {
                 CardEditorSheet(deck: deck, editing: card)
