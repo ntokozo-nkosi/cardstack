@@ -26,7 +26,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
-        close_pool()
+        await close_pool()
 
 
 app = FastAPI(title="CardStack API", lifespan=lifespan)
@@ -52,18 +52,18 @@ async def log_requests(request: Request, call_next) -> Response:
 
 
 @app.get("/")
-def root() -> dict[str, str]:
+async def root() -> dict[str, str]:
     return {"message": "Hello from CardStack API"}
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
 @app.get("/v1/decks", response_model=list[Deck])
-def list_decks(current_user: AuthenticatedUser = Depends(get_current_user)) -> list[Deck]:
-    decks = list_decks_for_user(current_user.db_user.id)
+async def list_decks(current_user: AuthenticatedUser = Depends(get_current_user)) -> list[Deck]:
+    decks = await list_decks_for_user(current_user.db_user.id)
     card_count = sum(len(deck["cards"]) for deck in decks)
     logger.info(
         "serving neon decks clerk_user=%s db_user=%s deck_count=%s card_count=%s",

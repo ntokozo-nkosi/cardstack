@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from clerk_backend_api import AuthenticateRequestOptions
-from clerk_backend_api import authenticate_request
+from clerk_backend_api import authenticate_request_async
 from clerk_backend_api.security.types import AuthStatus
 from fastapi import HTTPException
 from fastapi import Request
@@ -18,9 +18,9 @@ class AuthenticatedUser:
     db_user: CurrentUser
 
 
-def get_current_user(request: Request) -> AuthenticatedUser:
+async def get_current_user(request: Request) -> AuthenticatedUser:
     settings = get_settings()
-    request_state = authenticate_request(
+    request_state = await authenticate_request_async(
         request,
         AuthenticateRequestOptions(
             secret_key=settings.clerk_secret_key,
@@ -49,7 +49,7 @@ def get_current_user(request: Request) -> AuthenticatedUser:
     if not isinstance(email, str):
         email = None
 
-    db_user = get_or_create_user(clerk_id=clerk_id, email=email)
+    db_user = await get_or_create_user(clerk_id=clerk_id, email=email)
     request.state.clerk_user_id = clerk_id
     request.state.db_user_id = str(db_user.id)
     return AuthenticatedUser(clerk_id=clerk_id, db_user=db_user)

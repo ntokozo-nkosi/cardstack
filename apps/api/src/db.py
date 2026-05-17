@@ -1,14 +1,15 @@
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from uuid import UUID
 
 from psycopg import rows
-from psycopg_pool import ConnectionPool
+from psycopg import AsyncConnection
+from psycopg_pool import AsyncConnectionPool
 
 from .settings import get_settings
 
-_pool: ConnectionPool | None = None
+_pool: AsyncConnectionPool | None = None
 
 
 @dataclass(frozen=True)
@@ -18,44 +19,46 @@ class CurrentUser:
     email: str | None
 
 
-def get_pool() -> ConnectionPool:
+async def get_pool() -> AsyncConnectionPool:
     global _pool
 
     if _pool is None:
         settings = get_settings()
-        _pool = ConnectionPool(
+        _pool = AsyncConnectionPool(
             conninfo=settings.database_conninfo,
             kwargs={"row_factory": rows.dict_row},
             min_size=1,
             max_size=5,
-            open=True,
+            open=False,
         )
+        await _pool.open(wait=True)
 
     return _pool
 
 
-def close_pool() -> None:
+async def close_pool() -> None:
     global _pool
 
     if _pool is not None:
-        _pool.close()
+        await _pool.close()
         _pool = None
 
 
-@contextmanager
-def connection() -> Iterator:
-    with get_pool().connection() as conn:
+@asynccontextmanager
+async def connection() -> AsyncIterator[AsyncConnection]:
+    pool = await get_pool()
+    async with pool.connection() as conn:
         yield conn
 
 
-def get_or_create_user(clerk_id: str, email: str | None) -> CurrentUser:
-    with connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
+async def get_or_create_user(clerk_id: str, email: str | None) -> CurrentUser:
+    async with connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
                 "SELECT * FROM get_or_create_user(%s, %s)",
                 (clerk_id, email),
             )
-            row = cursor.fetchone()
+            row = await cursor.fetchone()
 
     if row is None:
         raise RuntimeError("get_or_create_user returned no user")
@@ -67,10 +70,10 @@ def get_or_create_user(clerk_id: str, email: str | None) -> CurrentUser:
     )
 
 
-def list_decks_for_user(user_id: UUID) -> list[dict]:
-    with connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
+async def list_decks_for_user(user_id: UUID) -> list[dict]:
+    async with connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
                 """
                 SELECT
                   d.id AS deck_id,
@@ -88,7 +91,7 @@ def list_decks_for_user(user_id: UUID) -> list[dict]:
                 """,
                 (user_id,),
             )
-            rows_by_card = cursor.fetchall()
+            rows_by_card = await cursor.fetchall()
 
     decks: dict[str, dict] = {}
     for row in rows_by_card:
