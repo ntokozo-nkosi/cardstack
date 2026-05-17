@@ -8,6 +8,7 @@ struct AuthGateView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(Clerk.self) private var clerk
     @State private var showAuthSheet = false
+    @State private var isLoadingDecks = false
 
     // TODO(auth-backend): Listen for backend auth failures from protected API
     // calls. When the backend returns 401 for an invalid session token, call
@@ -18,7 +19,14 @@ struct AuthGateView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if clerk.user != nil {
-                RootView()
+                ZStack {
+                    RootView()
+
+                    if isLoadingDecks {
+                        DeckLoadingView()
+                            .transition(.opacity)
+                    }
+                }
             } else {
                 SignedOutLandingView(showAuthSheet: $showAuthSheet)
             }
@@ -34,7 +42,29 @@ struct AuthGateView: View {
         }
         .task(id: clerk.user?.id) {
             guard clerk.isLoaded, clerk.user != nil, let env else { return }
+            isLoadingDecks = true
             await BackendDeckSync.sync(apiClient: env.apiClient, context: modelContext)
+            isLoadingDecks = false
         }
+    }
+}
+
+private struct DeckLoadingView: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            ProgressView()
+                .controlSize(.large)
+                .tint(Color("BrandPrimary"))
+
+            Text("Loading decks")
+                .font(.headline.weight(.semibold))
+
+            Text("Fetching your cards from CardStack.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .fontDesign(.monospaced)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
     }
 }
