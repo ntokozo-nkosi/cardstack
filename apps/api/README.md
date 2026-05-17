@@ -5,14 +5,13 @@ FastAPI backend for CardStack.
 ## Run locally
 
 ```sh
-cd apps/api
-uv run uvicorn src.main:app --reload --port 8080
+make api-dev
 ```
 
-From the repo root, you can also run:
+This uses the repo-root Docker Compose file and listens on port `8080`.
 
 ```sh
-make api-dev
+make stop
 ```
 
 ## Endpoints

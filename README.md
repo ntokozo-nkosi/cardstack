@@ -16,14 +16,15 @@ scripts/  repo automation scripts
 ## Run the API
 
 ```sh
-cd apps/api
-uv run uvicorn src.main:app --reload --port 8080
+make api-dev
 ```
 
-Or from the repo root:
+This uses Docker Compose from [compose.yaml](/Users/ntokozo-nkosi/pro_space/other_projects/CardStackIOS/compose.yaml).
+
+To stop it:
 
 ```sh
-make api-dev
+make stop
 ```
 
 ## iOS config
@@ -32,6 +33,20 @@ Generate the ignored iOS public config from Doppler:
 
 ```sh
 make secrets
+```
+
+## Build and Run iOS
+
+```sh
+make ios-build
+make ios-run
+make ios-logs
+```
+
+The default simulator is `iPhone 17 Pro`. Override it when needed:
+
+```sh
+make ios-run IOS_SIMULATOR="iPhone 16"
 ```
 
 The iOS project now lives at:
