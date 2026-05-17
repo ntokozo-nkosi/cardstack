@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AppEnvironment {
+    let apiClient: any APIClient
     let collections: any CollectionRepository
     let decks: any DeckRepository
     let cards: any CardRepository

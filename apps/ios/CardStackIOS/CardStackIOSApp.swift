@@ -20,10 +20,16 @@ struct CardStackIOSApp: App {
     var body: some Scene {
         WindowGroup {
             let context = container.mainContext
+            let clerk = Clerk.shared
             let env = AppEnvironment(
-                // TODO(auth-backend): Replace local-only SwiftData reads with
-                // backend-backed read paths once GET /v1/decks is protected by
-                // Clerk. SwiftData can remain as a cache or temporary local store.
+                apiClient: BackendAPIClient(
+                    sessionTokenProvider: {
+                        try await clerk.auth.getToken()
+                    },
+                    userIDProvider: {
+                        clerk.user?.id
+                    }
+                ),
                 collections: SwiftDataCollectionRepository(context: context),
                 decks: SwiftDataDeckRepository(context: context),
                 cards: SwiftDataCardRepository(context: context),
@@ -34,11 +40,11 @@ struct CardStackIOSApp: App {
             AuthGateView()
                 .modelContainer(container)
                 .environment(\.appEnvironment, env)
-                .environment(Clerk.shared)
+                .environment(clerk)
                 .tint(Color("BrandPrimary"))
                 .preferredColorScheme(.light)
                 .task {
-                    SeedData.runIfNeeded(env: env)
+                    await SeedData.syncFromBackendIfNeeded(apiClient: env.apiClient, context: context)
                 }
         }
     }

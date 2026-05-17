@@ -14,10 +14,11 @@ IOS_LOG_PROCESS ?= CardStackIOS
 secrets:
 	@mkdir -p apps/ios/CardStackIOS/Config
 	@printf 'CLERK_PUBLISHABLE_KEY = %s\n' "$$(doppler secrets get CLERK_PUBLISHABLE_KEY --plain --project $(DOPPLER_PROJECT) --config $(DOPPLER_CONFIG))" > $(SECRETS_XCCONFIG)
+	@printf 'API_BASE_URL = %s\n' "$$(doppler secrets get API_BASE_URL --plain --project $(DOPPLER_PROJECT) --config $(DOPPLER_CONFIG) | sed 's|//|/$$()/|')" >> $(SECRETS_XCCONFIG)
 	@echo "Wrote $(SECRETS_XCCONFIG)"
 
 api-dev:
-	@API_IMAGE=$(API_IMAGE) API_PORT=$(API_PORT) docker compose up --build api
+	@API_IMAGE=$(API_IMAGE) API_PORT=$(API_PORT) docker compose up --build -d api
 
 logs-api:
 	@docker compose logs -f api
