@@ -92,8 +92,9 @@ struct DeckCardTile: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color(.separator).opacity(0.6), lineWidth: 0.5)
+                .strokeBorder(Color(.systemGray4), lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
         .contextMenu {
             Button("Delete Deck", systemImage: "trash", role: .destructive, action: onDelete)
         }
