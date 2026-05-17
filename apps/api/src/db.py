@@ -74,48 +74,37 @@ async def list_decks_for_user(user_id: UUID) -> list[dict]:
     async with connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(
-                """
-                SELECT
-                  d.id AS deck_id,
-                  d.name AS deck_name,
-                  d.description AS deck_detail,
-                  d.created_at AS deck_created_at,
-                  c.id AS card_id,
-                  c.front AS card_front,
-                  c.back AS card_back,
-                  c.created_at AS card_created_at
-                FROM decks d
-                LEFT JOIN cards c ON c.deck_id = d.id
-                WHERE d.user_id = %s
-                ORDER BY d.created_at DESC, c.created_at ASC, c.id ASC
-                """,
+                "SELECT list_user_decks(%s) AS decks",
                 (user_id,),
             )
-            rows_by_card = await cursor.fetchall()
+            deck_list_row = await cursor.fetchone()
+            deck_rows = deck_list_row["decks"] if deck_list_row is not None else []
 
-    decks: dict[str, dict] = {}
-    for row in rows_by_card:
-        deck_id = str(row["deck_id"])
-        deck = decks.setdefault(
-            deck_id,
+            decks = []
+            for deck_row in deck_rows:
+                await cursor.execute(
+                    "SELECT get_deck_with_cards(%s, %s) AS deck",
+                    (deck_row["id"], user_id),
+                )
+                row = await cursor.fetchone()
+                if row is not None and row["deck"] is not None:
+                    decks.append(_to_deck_payload(row["deck"]))
+
+    return decks
+
+
+def _to_deck_payload(deck: dict) -> dict:
+    return {
+        "id": str(deck["id"]),
+        "name": deck["name"],
+        "detail": deck.get("description"),
+        "cards": [
             {
-                "id": deck_id,
-                "name": row["deck_name"],
-                "detail": row["deck_detail"],
-                "cards": [],
-            },
-        )
-
-        if row["card_id"] is None:
-            continue
-
-        deck["cards"].append(
-            {
-                "id": str(row["card_id"]),
-                "front": row["card_front"],
-                "back": row["card_back"],
-                "order": len(deck["cards"]),
+                "id": str(card["id"]),
+                "front": card["front"],
+                "back": card["back"],
+                "order": index,
             }
-        )
-
-    return list(decks.values())
+            for index, card in enumerate(deck.get("cards", []))
+        ],
+    }

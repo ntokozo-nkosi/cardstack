@@ -12,7 +12,7 @@ IOS_SIMULATOR ?= iPhone 17 Pro
 IOS_BUNDLE_ID ?= ntokozo.CardStackIOS
 IOS_LOG_PROCESS ?= CardStackIOS
 
-.PHONY: secrets api-dev logs-api stop db-migrate db-status db-rollback ios-build ios-run logs-ios
+.PHONY: secrets api-dev logs-api stop migration db-migrate db-status db-rollback ios-build ios-run logs-ios
 secrets:
 	@mkdir -p apps/ios/CardStackIOS/Config
 	@printf 'CLERK_PUBLISHABLE_KEY = %s\n' "$$(doppler secrets get CLERK_PUBLISHABLE_KEY --plain --project $(DOPPLER_PROJECT) --config $(DOPPLER_CONFIG))" > $(SECRETS_XCCONFIG)
@@ -27,6 +27,10 @@ logs-api:
 
 stop:
 	@docker compose down
+
+migration:
+	@test -n "$(NAME)" || (echo "Usage: make migration NAME=add_example" && exit 1)
+	@goose -dir database/migrations create $(NAME) sql
 
 db-migrate:
 	@doppler run --project $(API_DOPPLER_PROJECT) --config $(API_DOPPLER_CONFIG) -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING="$$DATABASE_URL_UNPOOLED" goose -dir database/migrations up'
