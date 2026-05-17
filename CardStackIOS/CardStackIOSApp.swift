@@ -1,3 +1,4 @@
+import ClerkKit
 import SwiftData
 import SwiftUI
 
@@ -6,6 +7,7 @@ struct CardStackIOSApp: App {
     let container: ModelContainer
 
     init() {
+        Clerk.configure(publishableKey: ClerkConfig.publishableKey)
         do {
             container = try ModelContainer(
                 for: DeckCollection.self, Deck.self, Card.self
@@ -26,9 +28,10 @@ struct CardStackIOSApp: App {
                 speech: NoopSpeechService()
             )
 
-            RootView()
+            AuthGateView()
                 .modelContainer(container)
                 .environment(\.appEnvironment, env)
+                .environment(Clerk.shared)
                 .tint(Color("BrandPrimary"))
                 .preferredColorScheme(.light)
                 .task {

@@ -1,0 +1,6 @@
+.DS_Store
+xcuserdata/
+*.xcuserstate
+
+CardStackIOS/Auth/ClerkSecrets.swift
+CardStackIOS/Config/Secrets.xcconfig

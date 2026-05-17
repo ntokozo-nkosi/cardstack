@@ -28,6 +28,14 @@ struct RootView: View {
                 Label("Cards", systemImage: "square.on.square")
             }
             .tag(2)
+
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label("Settings", systemImage: "gearshape")
+            }
+            .tag(3)
         }
     }
 }
