@@ -2,5 +2,10 @@
 xcuserdata/
 *.xcuserstate
 
-CardStackIOS/Auth/ClerkSecrets.swift
-CardStackIOS/Config/Secrets.xcconfig
+apps/ios/CardStackIOS/Auth/ClerkSecrets.swift
+apps/ios/CardStackIOS/Config/Secrets.xcconfig
+
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
