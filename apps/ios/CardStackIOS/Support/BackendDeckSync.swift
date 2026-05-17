@@ -1,22 +1,15 @@
 import Foundation
 import SwiftData
 
-enum SeedData {
-    private static let didSyncKey = "didSyncBackendMockData.v1"
-
+enum BackendDeckSync {
     @MainActor
-    static func syncFromBackendIfNeeded(apiClient: any APIClient, context: ModelContext) async {
-        #if DEBUG
-        guard !UserDefaults.standard.bool(forKey: didSyncKey) else { return }
-
+    static func sync(apiClient: any APIClient, context: ModelContext) async {
         do {
             let decks: [RemoteDeckPayload] = try await apiClient.get("/v1/decks")
             try upsert(decks: decks, context: context)
-            UserDefaults.standard.set(true, forKey: didSyncKey)
         } catch {
-            print("Backend mock data sync failed: \(error)")
+            print("Backend deck sync failed: \(error)")
         }
-        #endif
     }
 
     @MainActor

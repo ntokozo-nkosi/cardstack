@@ -1,8 +1,11 @@
 import ClerkKit
 import ClerkKitUI
+import SwiftData
 import SwiftUI
 
 struct AuthGateView: View {
+    @Environment(\.appEnvironment) private var env
+    @Environment(\.modelContext) private var modelContext
     @Environment(Clerk.self) private var clerk
     @State private var showAuthSheet = false
 
@@ -28,6 +31,10 @@ struct AuthGateView: View {
             if newValue != nil {
                 showAuthSheet = false
             }
+        }
+        .task(id: clerk.user?.id) {
+            guard clerk.isLoaded, clerk.user != nil, let env else { return }
+            await BackendDeckSync.sync(apiClient: env.apiClient, context: modelContext)
         }
     }
 }

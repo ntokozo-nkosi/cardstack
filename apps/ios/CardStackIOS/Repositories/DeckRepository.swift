@@ -1,9 +1,9 @@
 import Foundation
 import SwiftData
 
-// TODO(auth-backend): Keep this SwiftData repository local for now. The next
-// backend pass should fetch read-only seed-backed decks from GET /v1/decks with
-// Clerk Bearer auth before deciding whether full CRUD moves server-side.
+// TODO(auth-backend): Keep this SwiftData repository local for now. Deck reads
+// are hydrated from GET /v1/decks with Clerk Bearer auth before deciding
+// whether full CRUD moves server-side.
 protocol DeckRepository {
     func create(name: String, detail: String?, in collection: DeckCollection?) throws -> Deck
     func update(_ deck: Deck, name: String, detail: String?, collection: DeckCollection?) throws

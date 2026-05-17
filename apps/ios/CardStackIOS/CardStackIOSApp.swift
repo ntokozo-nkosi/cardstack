@@ -43,9 +43,6 @@ struct CardStackIOSApp: App {
                 .environment(clerk)
                 .tint(Color("BrandPrimary"))
                 .preferredColorScheme(.light)
-                .task {
-                    await SeedData.syncFromBackendIfNeeded(apiClient: env.apiClient, context: context)
-                }
         }
     }
 }
