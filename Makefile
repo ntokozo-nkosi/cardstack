@@ -2,6 +2,8 @@ DOPPLER_PROJECT ?= cardstack-ios
 DOPPLER_CONFIG ?= dev
 API_DOPPLER_PROJECT ?= cardstack
 API_DOPPLER_CONFIG ?= dev
+WEB_DOPPLER_PROJECT ?= cardstack
+WEB_DOPPLER_CONFIG ?= dev
 SECRETS_XCCONFIG := apps/ios/CardStackIOS/Config/Secrets.xcconfig
 API_PORT ?= 8080
 API_IMAGE ?= cardstack-api
@@ -11,8 +13,9 @@ IOS_CONFIGURATION ?= Debug
 IOS_SIMULATOR ?= iPhone 17 Pro
 IOS_BUNDLE_ID ?= ntokozo.CardStackIOS
 IOS_LOG_PROCESS ?= CardStackIOS
+BUN := bun
 
-.PHONY: secrets api-dev logs-api stop migration db-migrate db-status db-rollback ios-build ios-run logs-ios
+.PHONY: secrets api-dev logs-api stop migration db-migrate db-status db-rollback ios-build ios-run logs-ios check-bun web-install web-dev web-build web-start web-lint
 secrets:
 	@mkdir -p apps/ios/CardStackIOS/Config
 	@printf 'CLERK_PUBLISHABLE_KEY = %s\n' "$$(doppler secrets get CLERK_PUBLISHABLE_KEY --plain --project $(DOPPLER_PROJECT) --config $(DOPPLER_CONFIG))" > $(SECRETS_XCCONFIG)
@@ -76,3 +79,21 @@ logs-ios:
 		--style compact \
 		--level debug \
 		--predicate 'process == "$(IOS_LOG_PROCESS)"'
+
+check-bun:
+	@command -v $(BUN) >/dev/null 2>&1 || { echo "Bun is required. Install it from https://bun.sh"; exit 1; }
+
+web-install: check-bun
+	@cd apps/web && $(BUN) install
+
+web-dev: check-bun
+	@cd apps/web && doppler run --project $(WEB_DOPPLER_PROJECT) --config $(WEB_DOPPLER_CONFIG) -- $(BUN) run dev
+
+web-build: check-bun
+	@cd apps/web && doppler run --project $(WEB_DOPPLER_PROJECT) --config $(WEB_DOPPLER_CONFIG) -- $(BUN) run build
+
+web-start: check-bun
+	@cd apps/web && doppler run --project $(WEB_DOPPLER_PROJECT) --config $(WEB_DOPPLER_CONFIG) -- $(BUN) run start
+
+web-lint: check-bun
+	@cd apps/web && $(BUN) run lint

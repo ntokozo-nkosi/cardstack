@@ -7,7 +7,7 @@ Simple monorepo for CardStack clients and backend services.
 ```text
 apps/
   api/    FastAPI backend
-  web/    placeholder for a future web client
+  web/    Next.js (App Router) web client
   ios/    iOS app and Xcode project
 infra/    infrastructure code
 scripts/  repo automation scripts
@@ -25,6 +25,27 @@ To stop it:
 
 ```sh
 make stop
+```
+
+## Run the web app
+
+Install deps (first time only):
+
+```sh
+make web-install
+```
+
+Start the dev server:
+
+```sh
+make web-dev
+```
+
+Build for production:
+
+```sh
+make web-build
+make web-start
 ```
 
 ## iOS config

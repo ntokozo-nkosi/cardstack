@@ -10,3 +10,10 @@ __pycache__/
 .pytest_cache/
 *.pyc
 *.egg-info/
+
+# Next.js / web
+apps/web/node_modules/
+apps/web/.next/
+apps/web/out/
+apps/web/.env*.local
+apps/web/tsconfig.tsbuildinfo
