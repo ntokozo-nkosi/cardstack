@@ -1,5 +1,7 @@
 DOPPLER_PROJECT ?= cardstack-ios
 DOPPLER_CONFIG ?= dev
+API_DOPPLER_PROJECT ?= cardstack
+API_DOPPLER_CONFIG ?= dev
 SECRETS_XCCONFIG := apps/ios/CardStackIOS/Config/Secrets.xcconfig
 API_PORT ?= 8080
 API_IMAGE ?= cardstack-api
@@ -10,7 +12,7 @@ IOS_SIMULATOR ?= iPhone 17 Pro
 IOS_BUNDLE_ID ?= ntokozo.CardStackIOS
 IOS_LOG_PROCESS ?= CardStackIOS
 
-.PHONY: secrets api-dev logs-api stop ios-build ios-run logs-ios
+.PHONY: secrets api-dev logs-api stop db-migrate db-status db-rollback ios-build ios-run logs-ios
 secrets:
 	@mkdir -p apps/ios/CardStackIOS/Config
 	@printf 'CLERK_PUBLISHABLE_KEY = %s\n' "$$(doppler secrets get CLERK_PUBLISHABLE_KEY --plain --project $(DOPPLER_PROJECT) --config $(DOPPLER_CONFIG))" > $(SECRETS_XCCONFIG)
@@ -18,13 +20,22 @@ secrets:
 	@echo "Wrote $(SECRETS_XCCONFIG)"
 
 api-dev:
-	@API_IMAGE=$(API_IMAGE) API_PORT=$(API_PORT) docker compose up --build -d api
+	@API_IMAGE=$(API_IMAGE) API_PORT=$(API_PORT) doppler run --project $(API_DOPPLER_PROJECT) --config $(API_DOPPLER_CONFIG) -- docker compose up --build -d api
 
 logs-api:
 	@docker compose logs -f api
 
 stop:
 	@docker compose down
+
+db-migrate:
+	@doppler run --project $(API_DOPPLER_PROJECT) --config $(API_DOPPLER_CONFIG) -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING="$$DATABASE_URL_UNPOOLED" goose -dir database/migrations up'
+
+db-status:
+	@doppler run --project $(API_DOPPLER_PROJECT) --config $(API_DOPPLER_CONFIG) -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING="$$DATABASE_URL_UNPOOLED" goose -dir database/migrations status'
+
+db-rollback:
+	@doppler run --project $(API_DOPPLER_PROJECT) --config $(API_DOPPLER_CONFIG) -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING="$$DATABASE_URL_UNPOOLED" goose -dir database/migrations down'
 
 ios-build:
 	@xcodebuild \

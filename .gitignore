@@ -9,3 +9,4 @@ apps/ios/CardStackIOS/Config/Secrets.xcconfig
 __pycache__/
 .pytest_cache/
 *.pyc
+*.egg-info/
