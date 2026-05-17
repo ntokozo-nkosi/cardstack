@@ -3,6 +3,7 @@ import Foundation
 protocol APIClient {
     func get<T: Decodable>(_ path: String) async throws -> T
     func post<T: Decodable, B: Encodable>(_ path: String, body: B) async throws -> T
+    func postNoContent<B: Encodable>(_ path: String, body: B) async throws
     func put<T: Decodable, B: Encodable>(_ path: String, body: B) async throws -> T
     func delete(_ path: String) async throws
 }
@@ -22,7 +23,19 @@ struct BackendAPIClient: APIClient {
     private let session: URLSession
     private let sessionTokenProvider: SessionTokenProvider
     private let userIDProvider: UserIDProvider
-    private let decoder = JSONDecoder()
+    private let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+            if let date = APIDateParser.parse(raw) { return date }
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unrecognised date: \(raw)"
+            )
+        }
+        return decoder
+    }()
     private let encoder = JSONEncoder()
 
     init(
@@ -50,6 +63,14 @@ struct BackendAPIClient: APIClient {
 
     func post<T: Decodable, B: Encodable>(_ path: String, body: B) async throws -> T {
         try await send(path: path, method: "POST", body: encoder.encode(body))
+    }
+
+    func postNoContent<B: Encodable>(_ path: String, body: B) async throws {
+        let _: EmptyResponse = try await send(
+            path: path,
+            method: "POST",
+            body: encoder.encode(body)
+        )
     }
 
     func put<T: Decodable, B: Encodable>(_ path: String, body: B) async throws -> T {
@@ -97,3 +118,44 @@ struct BackendAPIClient: APIClient {
 }
 
 private struct EmptyResponse: Decodable {}
+
+// Pydantic serialises Postgres TIMESTAMP (naive, no TZ) as strings like
+// "2026-05-17T22:03:00.123456" or "2026-05-17T22:03:00". Try ISO8601 with
+// fractional seconds first, then without, then naive variants.
+enum APIDateParser {
+    private static let withFraction: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    private static let plain: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    private static let naiveWithFraction: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f
+    }()
+
+    private static let naivePlain: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f
+    }()
+
+    static func parse(_ raw: String) -> Date? {
+        if let date = withFraction.date(from: raw) { return date }
+        if let date = plain.date(from: raw) { return date }
+        if let date = naiveWithFraction.date(from: raw) { return date }
+        if let date = naivePlain.date(from: raw) { return date }
+        return nil
+    }
+}

@@ -102,12 +102,14 @@ struct CollectionListView: View {
             presenting: pendingDelete
         ) { collection in
             Button("Delete", role: .destructive) {
-                if let env { try? env.collections.delete(collection) }
+                if let env {
+                    Task { try? await env.collections.delete(collection) }
+                }
                 pendingDelete = nil
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { _ in
-            Text("This will also delete every deck and card inside. This cannot be undone.")
+            Text("Decks inside will be unassigned, not deleted. This cannot be undone.")
         }
     }
 }

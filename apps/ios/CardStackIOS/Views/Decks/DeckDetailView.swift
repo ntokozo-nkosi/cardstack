@@ -118,7 +118,9 @@ struct DeckDetailView: View {
             presenting: pendingDelete
         ) { card in
             Button("Delete", role: .destructive) {
-                if let env { try? env.cards.delete(card) }
+                if let env {
+                    Task { try? await env.cards.delete(card) }
+                }
                 pendingDelete = nil
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }

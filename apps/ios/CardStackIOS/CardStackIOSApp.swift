@@ -21,18 +21,19 @@ struct CardStackIOSApp: App {
         WindowGroup {
             let context = container.mainContext
             let clerk = Clerk.shared
+            let apiClient: any APIClient = BackendAPIClient(
+                sessionTokenProvider: {
+                    try await clerk.auth.getToken()
+                },
+                userIDProvider: {
+                    clerk.user?.id
+                }
+            )
             let env = AppEnvironment(
-                apiClient: BackendAPIClient(
-                    sessionTokenProvider: {
-                        try await clerk.auth.getToken()
-                    },
-                    userIDProvider: {
-                        clerk.user?.id
-                    }
-                ),
-                collections: SwiftDataCollectionRepository(context: context),
-                decks: SwiftDataDeckRepository(context: context),
-                cards: SwiftDataCardRepository(context: context),
+                apiClient: apiClient,
+                collections: BackendCollectionRepository(apiClient: apiClient, context: context),
+                decks: BackendDeckRepository(apiClient: apiClient, context: context),
+                cards: BackendCardRepository(apiClient: apiClient, context: context),
                 cardGeneration: NoopCardGenerationService(),
                 speech: NoopSpeechService()
             )

@@ -3,16 +3,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from time import perf_counter
 
-from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi import Response
 
-from .auth import AuthenticatedUser
-from .auth import get_current_user
 from .db import close_pool
-from .db import list_decks_for_user
-from .schemas import Deck
+from .routes import cards as cards_routes
+from .routes import collections as collections_routes
+from .routes import decks as decks_routes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,15 +59,6 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/v1/decks", response_model=list[Deck])
-async def list_decks(current_user: AuthenticatedUser = Depends(get_current_user)) -> list[Deck]:
-    decks = await list_decks_for_user(current_user.db_user.id)
-    card_count = sum(len(deck["cards"]) for deck in decks)
-    logger.info(
-        "serving neon decks clerk_user=%s db_user=%s deck_count=%s card_count=%s",
-        current_user.clerk_id,
-        current_user.db_user.id,
-        len(decks),
-        card_count,
-    )
-    return [Deck.model_validate(deck) for deck in decks]
+app.include_router(decks_routes.router)
+app.include_router(cards_routes.router)
+app.include_router(collections_routes.router)

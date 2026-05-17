@@ -1,45 +1,65 @@
 import Foundation
 import SwiftData
 
-// TODO(auth-backend): Keep this SwiftData repository local for now. Cards from
-// backend-owned sample decks should eventually be hydrated from protected API
-// responses, with local storage acting only as cache or temporary persistence.
 protocol CardRepository {
-    func create(front: String, back: String, in deck: Deck) throws -> Card
-    func update(_ card: Card, front: String, back: String) throws
-    func delete(_ card: Card) throws
+    func create(front: String, back: String, in deck: Deck) async throws -> Card
+    func update(_ card: Card, front: String, back: String, newDeck: Deck?) async throws
+    func delete(_ card: Card) async throws
 }
 
-final class SwiftDataCardRepository: CardRepository {
+@MainActor
+final class BackendCardRepository: CardRepository {
+    private let apiClient: any APIClient
     private let context: ModelContext
 
-    init(context: ModelContext) {
+    init(apiClient: any APIClient, context: ModelContext) {
+        self.apiClient = apiClient
         self.context = context
     }
 
-    func create(front: String, back: String, in deck: Deck) throws -> Card {
-        let order = deck.cards.count
-        let card = Card(
+    func create(front: String, back: String, in deck: Deck) async throws -> Card {
+        let deckRemoteId = try requireRemoteId(deck.remoteId)
+        let body = CardCreateBody(
+            front: String(front.prefix(200)),
+            back: String(back.prefix(200))
+        )
+        let card: RemoteCard = try await apiClient.post(
+            "/v1/decks/\(deckRemoteId)/cards",
+            body: body
+        )
+        await BackendDeckSync.sync(apiClient: apiClient, context: context)
+        return try fetchCard(remoteId: card.id)
+    }
+
+    func update(_ card: Card, front: String, back: String, newDeck: Deck?) async throws {
+        let remoteId = try requireRemoteId(card.remoteId)
+        let body = CardUpdateBody(
             front: String(front.prefix(200)),
             back: String(back.prefix(200)),
-            deck: deck,
-            order: order
+            deckId: newDeck?.remoteId
         )
-        context.insert(card)
-        deck.updatedAt = .now
-        try context.save()
+        let _: RemoteCard = try await apiClient.put("/v1/cards/\(remoteId)", body: body)
+        await BackendDeckSync.sync(apiClient: apiClient, context: context)
+    }
+
+    func delete(_ card: Card) async throws {
+        let remoteId = try requireRemoteId(card.remoteId)
+        try await apiClient.delete("/v1/cards/\(remoteId)")
+        await BackendDeckSync.sync(apiClient: apiClient, context: context)
+    }
+
+    private func fetchCard(remoteId: String) throws -> Card {
+        let descriptor = FetchDescriptor<Card>(predicate: #Predicate { $0.remoteId == remoteId })
+        guard let card = try context.fetch(descriptor).first else {
+            throw RepositoryError.notFoundAfterResync
+        }
         return card
     }
 
-    func update(_ card: Card, front: String, back: String) throws {
-        card.front = String(front.prefix(200))
-        card.back = String(back.prefix(200))
-        card.updatedAt = .now
-        try context.save()
-    }
-
-    func delete(_ card: Card) throws {
-        context.delete(card)
-        try context.save()
+    private func requireRemoteId(_ remoteId: String?) throws -> String {
+        guard let remoteId, !remoteId.isEmpty else {
+            throw RepositoryError.missingRemoteId
+        }
+        return remoteId
     }
 }

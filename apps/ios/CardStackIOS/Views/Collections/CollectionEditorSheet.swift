@@ -8,6 +8,8 @@ struct CollectionEditorSheet: View {
 
     @State private var name: String = ""
     @State private var detail: String = ""
+    @State private var isSaving = false
+    @State private var errorMessage: String?
     @FocusState private var focusedField: Field?
 
     private enum Field { case name, detail }
@@ -57,6 +59,18 @@ struct CollectionEditorSheet: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 focusedField = .name
             }
+        }
+        .alert(
+            "Couldn't save collection",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            ),
+            presenting: errorMessage
+        ) { _ in
+            Button("OK") { errorMessage = nil }
+        } message: { message in
+            Text(message)
         }
     }
 
@@ -109,39 +123,49 @@ struct CollectionEditorSheet: View {
                 .frame(height: 0.5)
 
             Button {
-                save()
+                Task { await save() }
             } label: {
-                Text(isEditing ? "Save Collection" : "Create Collection")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color("BrandPrimary"), in: Capsule())
-                    .opacity(isValid ? 1 : 0.45)
+                ZStack {
+                    Text(isEditing ? "Save Collection" : "Create Collection")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .opacity(isSaving ? 0 : 1)
+                    if isSaving {
+                        ProgressView()
+                            .tint(.white)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color("BrandPrimary"), in: Capsule())
+                .opacity(isValid && !isSaving ? 1 : 0.45)
             }
             .buttonStyle(.plain)
-            .disabled(!isValid)
+            .disabled(!isValid || isSaving)
             .padding(.horizontal, 20)
             .padding(.top, 14)
             .padding(.bottom, 28)
         }
     }
 
-    private func save() {
+    private func save() async {
         guard let env else { return }
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         let trimmedDetail = detail.trimmingCharacters(in: .whitespaces)
         let detailOrNil = trimmedDetail.isEmpty ? nil : trimmedDetail
 
+        isSaving = true
+        defer { isSaving = false }
+
         do {
             if let editing {
-                try env.collections.update(editing, name: trimmedName, detail: detailOrNil)
+                try await env.collections.update(editing, name: trimmedName, detail: detailOrNil)
             } else {
-                _ = try env.collections.create(name: trimmedName, detail: detailOrNil)
+                _ = try await env.collections.create(name: trimmedName, detail: detailOrNil)
             }
             dismiss()
         } catch {
-            print("Failed to save collection: \(error)")
+            errorMessage = "Failed to save collection: \(error.localizedDescription)"
         }
     }
 }

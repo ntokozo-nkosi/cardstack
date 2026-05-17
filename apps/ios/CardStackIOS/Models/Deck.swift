@@ -10,16 +10,15 @@ final class Deck {
     var updatedAt: Date
     var remoteId: String?
 
-    var collection: DeckCollection?
+    var collections: [DeckCollection] = []
 
     @Relationship(deleteRule: .cascade, inverse: \Card.deck)
     var cards: [Card] = []
 
-    init(name: String, detail: String? = nil, collection: DeckCollection? = nil) {
+    init(name: String, detail: String? = nil) {
         self.id = UUID()
         self.name = name
         self.detail = detail
-        self.collection = collection
         self.createdAt = .now
         self.updatedAt = .now
     }
