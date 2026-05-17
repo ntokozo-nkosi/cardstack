@@ -1,6 +1,9 @@
 import Foundation
 import SwiftData
 
+// TODO(auth-backend): Keep this SwiftData repository local for now. When the
+// backend exposes protected read-only sample data, add a backend-backed read
+// path and use SwiftData only as cache or temporary local storage.
 protocol CollectionRepository {
     func create(name: String, detail: String?) throws -> DeckCollection
     func update(_ collection: DeckCollection, name: String, detail: String?) throws

@@ -10,7 +10,7 @@ IOS_SIMULATOR ?= iPhone 17 Pro
 IOS_BUNDLE_ID ?= ntokozo.CardStackIOS
 IOS_LOG_PROCESS ?= CardStackIOS
 
-.PHONY: secrets api-dev stop ios-build ios-run ios-logs
+.PHONY: secrets api-dev logs-api stop ios-build ios-run logs-ios
 secrets:
 	@mkdir -p apps/ios/CardStackIOS/Config
 	@printf 'CLERK_PUBLISHABLE_KEY = %s\n' "$$(doppler secrets get CLERK_PUBLISHABLE_KEY --plain --project $(DOPPLER_PROJECT) --config $(DOPPLER_CONFIG))" > $(SECRETS_XCCONFIG)
@@ -18,6 +18,9 @@ secrets:
 
 api-dev:
 	@API_IMAGE=$(API_IMAGE) API_PORT=$(API_PORT) docker compose up --build api
+
+logs-api:
+	@docker compose logs -f api
 
 stop:
 	@docker compose down
@@ -52,7 +55,7 @@ ios-run:
 	xcrun simctl install "$$DEVICE_ID" "$$APP_PATH"; \
 	xcrun simctl launch "$$DEVICE_ID" $(IOS_BUNDLE_ID)
 
-ios-logs:
+logs-ios:
 	@xcrun simctl spawn booted log stream \
 		--style compact \
 		--level debug \

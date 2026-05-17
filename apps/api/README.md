@@ -18,3 +18,4 @@ make stop
 
 - `GET /` returns a hello-world response.
 - `GET /health` returns a basic health check.
+- `GET /v1/decks` returns backend-owned mock deck/card data.

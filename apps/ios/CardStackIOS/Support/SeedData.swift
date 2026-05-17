@@ -3,6 +3,9 @@ import Foundation
 enum SeedData {
     private static let didSeedKey = "didSeed.v1"
 
+    // TODO(auth-backend): Remove this local debug seed path after iOS fetches
+    // the backend-owned AWS sample decks/cards from GET /v1/decks with a Clerk
+    // session token.
     static func runIfNeeded(env: AppEnvironment) {
         #if DEBUG
         guard !UserDefaults.standard.bool(forKey: didSeedKey) else { return }

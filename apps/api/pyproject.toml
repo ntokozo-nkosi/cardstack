@@ -10,6 +10,9 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
+    # TODO(auth-backend): Add clerk-backend-api for Clerk session token
+    # verification, plus settings support if CLERK_SECRET_KEY,
+    # CLERK_JWT_KEY, and authorized parties need structured parsing.
 ]
 
 [project.optional-dependencies]

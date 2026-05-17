@@ -1,6 +1,9 @@
 import Foundation
 import SwiftData
 
+// TODO(auth-backend): Keep this SwiftData repository local for now. Cards from
+// backend-owned sample decks should eventually be hydrated from protected API
+// responses, with local storage acting only as cache or temporary persistence.
 protocol CardRepository {
     func create(front: String, back: String, in deck: Deck) throws -> Card
     func update(_ card: Card, front: String, back: String) throws

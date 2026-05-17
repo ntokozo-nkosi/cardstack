@@ -21,6 +21,9 @@ struct CardStackIOSApp: App {
         WindowGroup {
             let context = container.mainContext
             let env = AppEnvironment(
+                // TODO(auth-backend): Replace local-only SwiftData reads with
+                // backend-backed read paths once GET /v1/decks is protected by
+                // Clerk. SwiftData can remain as a cache or temporary local store.
                 collections: SwiftDataCollectionRepository(context: context),
                 decks: SwiftDataDeckRepository(context: context),
                 cards: SwiftDataCardRepository(context: context),
