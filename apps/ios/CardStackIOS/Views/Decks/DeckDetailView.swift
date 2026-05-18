@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DeckDetailView: View {
     @Environment(\.appEnvironment) private var env
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     let deck: Deck
 
@@ -9,6 +10,7 @@ struct DeckDetailView: View {
     @State private var editingCard: Card?
     @State private var pendingDelete: Card?
     @State private var navigateToStudy = false
+    @State private var isMutating = false
 
     private var sortedCards: [Card] {
         deck.cards.sorted { $0.order < $1.order }
@@ -81,6 +83,11 @@ struct DeckDetailView: View {
             }
             .padding(.bottom, 100)
         }
+        .refreshable {
+            if let env {
+                await BackendDeckSync.sync(apiClient: env.apiClient, context: modelContext)
+            }
+        }
         .fontDesign(.monospaced)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -118,15 +125,19 @@ struct DeckDetailView: View {
             presenting: pendingDelete
         ) { card in
             Button("Delete", role: .destructive) {
-                if let env {
-                    Task { try? await env.cards.delete(card) }
-                }
                 pendingDelete = nil
+                guard let env else { return }
+                Task {
+                    isMutating = true
+                    try? await env.cards.delete(card)
+                    isMutating = false
+                }
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { _ in
             Text("This cannot be undone.")
         }
+        .overlay { MutationOverlay(isShowing: isMutating) }
     }
 
     private var backButton: some View {

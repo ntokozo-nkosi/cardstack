@@ -2,11 +2,13 @@ import SwiftUI
 
 struct CollectionDetailView: View {
     @Environment(\.appEnvironment) private var env
+    @Environment(\.modelContext) private var modelContext
     let collection: DeckCollection
 
     @State private var showCreateDeck = false
     @State private var editingDeck: Deck?
     @State private var pendingDelete: Deck?
+    @State private var isMutating = false
 
     private var sortedDecks: [Deck] {
         collection.decks.sorted { $0.createdAt > $1.createdAt }
@@ -55,6 +57,11 @@ struct CollectionDetailView: View {
                 }
             }
         }
+        .refreshable {
+            if let env {
+                await BackendDeckSync.sync(apiClient: env.apiClient, context: modelContext)
+            }
+        }
         .navigationTitle(collection.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -84,14 +91,18 @@ struct CollectionDetailView: View {
             presenting: pendingDelete
         ) { deck in
             Button("Delete", role: .destructive) {
-                if let env {
-                    Task { try? await env.decks.delete(deck) }
-                }
                 pendingDelete = nil
+                guard let env else { return }
+                Task {
+                    isMutating = true
+                    try? await env.decks.delete(deck)
+                    isMutating = false
+                }
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { _ in
             Text("This removes all its cards. This cannot be undone.")
         }
+        .overlay { MutationOverlay(isShowing: isMutating) }
     }
 }

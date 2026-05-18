@@ -3,11 +3,13 @@ import SwiftUI
 
 struct CollectionListView: View {
     @Environment(\.appEnvironment) private var env
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \DeckCollection.createdAt, order: .forward) private var collections: [DeckCollection]
 
     @State private var showCreateSheet = false
     @State private var editingCollection: DeckCollection?
     @State private var pendingDelete: DeckCollection?
+    @State private var isMutating = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -65,6 +67,11 @@ struct CollectionListView: View {
                 }
                 .listStyle(.plain)
                 .fontDesign(.monospaced)
+                .refreshable {
+                    if let env {
+                        await BackendDeckSync.sync(apiClient: env.apiClient, context: modelContext)
+                    }
+                }
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -102,14 +109,18 @@ struct CollectionListView: View {
             presenting: pendingDelete
         ) { collection in
             Button("Delete", role: .destructive) {
-                if let env {
-                    Task { try? await env.collections.delete(collection) }
-                }
                 pendingDelete = nil
+                guard let env else { return }
+                Task {
+                    isMutating = true
+                    try? await env.collections.delete(collection)
+                    isMutating = false
+                }
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { _ in
             Text("Decks inside will be unassigned, not deleted. This cannot be undone.")
         }
+        .overlay { MutationOverlay(isShowing: isMutating) }
     }
 }

@@ -3,12 +3,14 @@ import SwiftUI
 
 struct DeckListView: View {
     @Environment(\.appEnvironment) private var env
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Deck.createdAt, order: .forward) private var decks: [Deck]
 
     @State private var showCreateSheet = false
     @State private var pendingDelete: Deck?
     @State private var viewTarget: Deck?
     @State private var studyTarget: Deck?
+    @State private var isMutating = false
 
     private let columns = [
         GridItem(.adaptive(minimum: 280, maximum: 380), spacing: 12)
@@ -52,6 +54,11 @@ struct DeckListView: View {
             .padding(.bottom, 32)
             .fontDesign(.monospaced)
         }
+        .refreshable {
+            if let env {
+                await BackendDeckSync.sync(apiClient: env.apiClient, context: modelContext)
+            }
+        }
         .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .bottomTrailing) {
             Button {
@@ -87,14 +94,38 @@ struct DeckListView: View {
             presenting: pendingDelete
         ) { deck in
             Button("Delete", role: .destructive) {
-                if let env {
-                    Task { try? await env.decks.delete(deck) }
-                }
                 pendingDelete = nil
+                guard let env else { return }
+                Task {
+                    isMutating = true
+                    try? await env.decks.delete(deck)
+                    isMutating = false
+                }
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { _ in
             Text("This removes all its cards. This cannot be undone.")
+        }
+        .overlay { MutationOverlay(isShowing: isMutating) }
+    }
+}
+
+struct MutationOverlay: View {
+    let isShowing: Bool
+
+    var body: some View {
+        if isShowing {
+            ZStack {
+                Color.black.opacity(0.15)
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(Color("BrandPrimary"))
+                    .padding(24)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+            .ignoresSafeArea()
+            .transition(.opacity)
+            .allowsHitTesting(true)
         }
     }
 }

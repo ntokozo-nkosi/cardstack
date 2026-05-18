@@ -2,6 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct CardListView: View {
+    @Environment(\.appEnvironment) private var env
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: [SortDescriptor(\Card.createdAt, order: .reverse)]) private var allCards: [Card]
 
     private var groupedByDeck: [(deck: Deck?, cards: [Card])] {
@@ -63,6 +65,11 @@ struct CardListView: View {
                 }
                 .listStyle(.plain)
                 .fontDesign(.monospaced)
+                .refreshable {
+                    if let env {
+                        await BackendDeckSync.sync(apiClient: env.apiClient, context: modelContext)
+                    }
+                }
             }
         }
         .toolbar(.hidden, for: .navigationBar)
