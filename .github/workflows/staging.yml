@@ -1,0 +1,29 @@
+name: Deploy Staging to AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - apps/api/**
+      - .github/**
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: aws-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to AWS
+    uses: ./.github/workflows/aws-ecs-deploy-reusable.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: staging
+      role_arn: ${{ vars.AWS_STAGING_DEPLOY_ROLE_ARN }}

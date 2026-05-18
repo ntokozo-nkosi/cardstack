@@ -11,6 +11,15 @@ __pycache__/
 *.pyc
 *.egg-info/
 
+# Terraform
+infra/.terraform/
+infra/.terraform-*/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfvars
+infra/crash.log
+infra/crash.*.log
+
 # Next.js / web
 apps/web/node_modules/
 apps/web/.next/

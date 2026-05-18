@@ -1,0 +1,113 @@
+name: AWS ECS Deploy Reusable
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Terraform environment name used in AWS resource names.
+        required: true
+        type: string
+      role_arn:
+        description: AWS IAM role ARN to assume with GitHub OIDC.
+        required: true
+        type: string
+      aws_region:
+        required: false
+        type: string
+        default: af-south-1
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ inputs.aws_region }}
+  PROJECT: cardstack-api
+  ECR_REPOSITORY: cardstack-api-${{ inputs.environment }}
+  ECS_CLUSTER: ecs-cardstack-api-${{ inputs.environment }}
+  API_SERVICE: api-cardstack-api-${{ inputs.environment }}
+  API_TASK_FAMILY: cardstack-api-${{ inputs.environment }}
+  API_CONTAINER: api
+  IAM_ROLE_ARN: ${{ inputs.role_arn }}
+
+jobs:
+  build-api:
+    name: Build and Push API
+    runs-on: ubuntu-24.04-arm
+    outputs:
+      image: ${{ steps.image-uri.outputs.uri }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: ./.github/actions/configure-aws
+        with:
+          role-arn: ${{ env.IAM_ROLE_ARN }}
+          region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Resolve image URI
+        id: image-uri
+        shell: bash
+        run: |
+          image_uri="${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          echo "uri=$image_uri" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api
+          file: apps/api/Dockerfile
+          platforms: linux/arm64
+          push: true
+          cache-from: type=registry,ref=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:cache
+          cache-to: type=registry,ref=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:cache,mode=max,image-manifest=true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+  deploy-api:
+    name: Deploy API
+    needs: build-api
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout deployment action
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+
+      - name: Configure AWS
+        uses: ./.github/actions/configure-aws
+        with:
+          role-arn: ${{ env.IAM_ROLE_ARN }}
+          region: ${{ env.AWS_REGION }}
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$API_TASK_FAMILY" \
+            --query taskDefinition \
+            --output json > task-definition.json
+
+      - name: Render task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.API_CONTAINER }}
+          image: ${{ needs.build-api.outputs.image }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ env.API_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
