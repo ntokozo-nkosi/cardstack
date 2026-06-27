@@ -4,6 +4,7 @@ API_DOPPLER_PROJECT ?= cardstack
 API_DOPPLER_CONFIG ?= dev
 WEB_DOPPLER_PROJECT ?= cardstack
 WEB_DOPPLER_CONFIG ?= dev
+FLY_API_APP ?= cardstack-app-api
 SECRETS_XCCONFIG := apps/ios/CardStackIOS/Config/Secrets.xcconfig
 API_PORT ?= 8080
 API_IMAGE ?= cardstack-api
@@ -15,7 +16,7 @@ IOS_BUNDLE_ID ?= ntokozo.CardStackIOS
 IOS_LOG_PROCESS ?= CardStackIOS
 BUN := bun
 
-.PHONY: secrets api-dev logs-api stop migration db-migrate db-status db-rollback ios-build ios-run logs-ios check-bun web-install web-dev web-build web-start web-lint
+.PHONY: secrets api-dev logs-api stop migration db-migrate db-status db-rollback fly-api-validate fly-api-deploy fly-api-status fly-api-logs fly-api-secrets ios-build ios-run logs-ios check-bun web-install web-dev web-build web-start web-lint
 secrets:
 	@mkdir -p apps/ios/CardStackIOS/Config
 	@printf 'CLERK_PUBLISHABLE_KEY = %s\n' "$$(doppler secrets get CLERK_PUBLISHABLE_KEY --plain --project $(DOPPLER_PROJECT) --config $(DOPPLER_CONFIG))" > $(SECRETS_XCCONFIG)
@@ -43,6 +44,21 @@ db-status:
 
 db-rollback:
 	@doppler run --project $(API_DOPPLER_PROJECT) --config $(API_DOPPLER_CONFIG) -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING="$$DATABASE_URL_UNPOOLED" goose -dir database/migrations down'
+
+fly-api-validate:
+	@cd apps/api && fly config validate
+
+fly-api-deploy:
+	@cd apps/api && fly deploy --app $(FLY_API_APP)
+
+fly-api-status:
+	@fly status --app $(FLY_API_APP)
+
+fly-api-logs:
+	@fly logs --app $(FLY_API_APP)
+
+fly-api-secrets:
+	@fly secrets list --app $(FLY_API_APP)
 
 ios-build:
 	@xcodebuild \
