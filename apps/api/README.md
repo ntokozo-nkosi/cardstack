@@ -27,19 +27,24 @@ make db-migrate
 
 ## Fly.io
 
-The production API app is configured in `apps/api/fly.toml` as
-`cardstack-app-api` in the `jnb` region.
+The API has separate Fly apps in the `jnb` region:
 
-Create the app once:
+- staging: `cardstack-app-api-staging`, configured by `apps/api/fly.staging.toml`
+- production: `cardstack-app-api-prod`, configured by `apps/api/fly.production.toml`
+
+Create the apps once:
 
 ```sh
-fly apps create cardstack-app-api --org personal
+fly apps create cardstack-app-api-staging --org personal
+fly apps create cardstack-app-api-prod --org personal
 ```
 
-Set the runtime Doppler token as the only Fly secret:
+Set the runtime Doppler token as the only Fly secret. Use a Doppler service
+token scoped to the matching `cardstack` config:
 
 ```sh
-fly secrets set DOPPLER_TOKEN=... --app cardstack-app-api
+fly secrets set DOPPLER_TOKEN=... --app cardstack-app-api-staging
+fly secrets set DOPPLER_TOKEN=... --app cardstack-app-api-prod
 ```
 
 That Doppler token must resolve:
@@ -59,7 +64,8 @@ make fly-api-deploy
 Check the deployed app:
 
 ```sh
-curl https://cardstack-app-api.fly.dev/health
+curl https://cardstack-app-api-staging.fly.dev/health
+curl https://cardstack-app-api-prod.fly.dev/health
 make fly-api-status
 make fly-api-logs
 make fly-api-secrets

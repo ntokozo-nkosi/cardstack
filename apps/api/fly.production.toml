@@ -1,4 +1,4 @@
-app = "cardstack-app-api"
+app = "cardstack-app-api-prod"
 primary_region = "jnb"
 
 [build]

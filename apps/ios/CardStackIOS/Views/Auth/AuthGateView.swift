@@ -18,7 +18,7 @@ struct AuthGateView: View {
             if !clerk.isLoaded {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if clerk.user != nil {
+            } else if clerk.session != nil {
                 ZStack {
                     RootView()
 
@@ -40,8 +40,8 @@ struct AuthGateView: View {
                 showAuthSheet = false
             }
         }
-        .task(id: clerk.user?.id) {
-            guard clerk.isLoaded, clerk.user != nil, let env else { return }
+        .task(id: clerk.session?.id) {
+            guard clerk.isLoaded, clerk.session != nil, let env else { return }
             isLoadingDecks = true
             await BackendDeckSync.sync(apiClient: env.apiClient, context: modelContext)
             isLoadingDecks = false

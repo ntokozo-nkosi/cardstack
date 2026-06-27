@@ -5,6 +5,8 @@ API_DOPPLER_CONFIG ?= dev
 WEB_DOPPLER_PROJECT ?= cardstack
 WEB_DOPPLER_CONFIG ?= dev
 FLY_API_APP ?= cardstack-app-api
+FLY_API_STAGING_APP ?= cardstack-app-api-staging
+FLY_API_PRODUCTION_APP ?= cardstack-app-api-prod
 SECRETS_XCCONFIG := apps/ios/CardStackIOS/Config/Secrets.xcconfig
 API_PORT ?= 8080
 API_IMAGE ?= cardstack-api
@@ -15,6 +17,18 @@ IOS_SIMULATOR ?= iPhone 17 Pro
 IOS_BUNDLE_ID ?= ntokozo.CardStackIOS
 IOS_LOG_PROCESS ?= CardStackIOS
 BUN := bun
+
+define fly_api_env
+	@set -eu; \
+	printf 'Select Fly API environment:\n  1) staging\n  2) production\nEnvironment: '; \
+	read environment; \
+	case "$$environment" in \
+		1|staging) app="$(FLY_API_STAGING_APP)"; config="fly.staging.toml" ;; \
+		2|production) app="$(FLY_API_PRODUCTION_APP)"; config="fly.production.toml" ;; \
+		*) echo "Environment must be staging or production"; exit 1 ;; \
+	esac; \
+	$(1)
+endef
 
 .PHONY: secrets api-dev logs-api stop migration db-migrate db-status db-rollback fly-api-validate fly-api-deploy fly-api-status fly-api-logs fly-api-secrets ios-build ios-run logs-ios check-bun web-install web-dev web-build web-start web-lint
 secrets:
@@ -46,19 +60,19 @@ db-rollback:
 	@doppler run --project $(API_DOPPLER_PROJECT) --config $(API_DOPPLER_CONFIG) -- sh -c 'GOOSE_DRIVER=postgres GOOSE_DBSTRING="$$DATABASE_URL_UNPOOLED" goose -dir database/migrations down'
 
 fly-api-validate:
-	@cd apps/api && fly config validate
+	$(call fly_api_env,cd apps/api && fly config validate --config "$$config")
 
 fly-api-deploy:
-	@cd apps/api && fly deploy --app $(FLY_API_APP)
+	$(call fly_api_env,cd apps/api && fly deploy --config "$$config" --app "$$app")
 
 fly-api-status:
-	@fly status --app $(FLY_API_APP)
+	$(call fly_api_env,fly status --app "$$app")
 
 fly-api-logs:
-	@fly logs --app $(FLY_API_APP)
+	$(call fly_api_env,fly logs --app "$$app")
 
 fly-api-secrets:
-	@fly secrets list --app $(FLY_API_APP)
+	$(call fly_api_env,fly secrets list --app "$$app")
 
 ios-build:
 	@xcodebuild \

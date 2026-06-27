@@ -23,7 +23,7 @@ struct CardStackIOSApp: App {
             let clerk = Clerk.shared
             let apiClient: any APIClient = BackendAPIClient(
                 sessionTokenProvider: {
-                    try await clerk.auth.getToken()
+                    try await clerk.session?.getToken()
                 },
                 userIDProvider: {
                     clerk.user?.id
