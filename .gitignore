@@ -40,3 +40,16 @@ bun-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# iOS local config
+xcuserdata/
+*.xcuserstate
+apps/ios/CardStackIOS/Auth/ClerkSecrets.swift
+apps/ios/CardStackIOS/Config/Secrets.xcconfig
+
+# Python / API
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.egg-info/
